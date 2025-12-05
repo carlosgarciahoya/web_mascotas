@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🐾 Web Mascotas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    header { background: #333; color: white; padding: 10px; }
+    nav a { color: white; margin: 0 10px; text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    main { padding: 20px; }
+    footer { text-align: center; padding: 10px; margin-top: 20px; background: #eee; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    table, th, td { border: 1px solid #ccc; }
+    th, td { padding: 8px; text-align: left; }
+    form input, form button { margin: 5px 0; padding: 8px; width: 100%; max-width: 400px; }
+    form button { background: #333; color: white; border: none; cursor: pointer; }
+    form button:hover { background: #555; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐾 Web Mascotas</h1>
+    <nav>
+      <a href="{{ url_for('main.index') }}">Inicio</a>
+      <a href="{{ url_for('main.buscar_mascotas') }}">Buscar</a>
+      <a href="{{ url_for('main.crear_mascota') }}">Crear</a>
+      <a href="{{ url_for('main.modificar_mascotas') }}">Modificar</a>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>© 2025 Web Mascotas</p>
+  </footer>
+</body>
+</html>

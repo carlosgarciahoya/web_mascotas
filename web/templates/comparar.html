@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Comparar Fotos de Mascotas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        main { text-align: center; padding: 40px; }
+        form { margin-bottom: 40px; }
+        table { width: 90%; margin: auto; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        img { max-width: 140px; border-radius: 8px; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+<header><h1>🔍 Comparar Fotos de Mascotas</h1></header>
+
+<main>
+    <form method="POST" enctype="multipart/form-data">
+        <p>Sube una foto y elige con qué tipo comparar:</p>
+        <input type="file" name="foto" required>
+        <select name="tipo">
+            <option value="desaparecida">Mascota desaparecida</option>
+            <option value="encontrada">Mascota encontrada</option>
+        </select>
+        <button type="submit">Comparar</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if resultado %}
+        <h2>Resultados de comparación</h2>
+        <table>
+            <tr>
+                <th>Mascota</th>
+                <th>Foto</th>
+                <th>Coincidencia (%)</th>
+                <th>Detalles</th>
+            </tr>
+            {% for r in resultado %}
+            <tr>
+                <td>{{ r.mascota.nombre }} ({{ r.mascota.tipo }})</td>
+                <td><img src="{{ url_for('static', filename='fotos/' + r.foto.ruta.split('fotos\\')[-1]) }}"></td>
+                <td>{{ r.porcentaje }}%</td>
+                <td>{{ r.texto }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</main>
+
+<footer>Web Mascotas - 2025</footer>
+</body>
+</html>

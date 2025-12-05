@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Modificar Mascota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .header-bar {
+            position: relative;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .header-bar h1 {
+            text-align: center;
+            margin: 10px 0 6px 0;
+            line-height: 1.2;
+        }
+        .btn-volver {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #555; color: white;
+            padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer;
+        }
+        .btn-volver:hover { background-color: #333; }
+
+        .row {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            margin-top: 10px;
+        }
+        .row input, .row select, .row textarea {
+            flex: 1 1 200px;
+            min-width: 180px;
+            padding: 8px;
+        }
+        textarea { min-height: 80px; }
+
+        .fieldset {
+            border: 1px solid #ddd; border-radius: 8px;
+            padding: 12px; margin-top: 12px; background: #f9f9f9;
+        }
+        .fieldset legend {
+            padding: 0 6px; font-weight: bold; color: #333;
+        }
+
+        .badge {
+            display: inline-block; padding: 2px 8px;
+            background: #4CAF50; color: #fff; border-radius: 10px; font-size: 0.85rem;
+            margin-left: 6px;
+        }
+
+        .actions {
+            text-align: center; margin-top: 14px;
+        }
+        .actions button {
+            background-color: #4CAF50; color: #fff; border: none;
+            padding: 10px 16px; border-radius: 6px; cursor: pointer;
+        }
+        .actions button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body data-tipo="{{ mascota.tipo_registro }}">
+<div class="container">
+    <header class="header-bar">
+        <h1>
+            Modificar Mascota
+            <span class="badge">{{ mascota.tipo_registro|capitalize }}</span>
+        </h1>
+        <button class="btn-volver" onclick="window.location.href='{{ url_for('main.index') }}'">⬅ Volver al inicio</button>
+    </header>
+
+    <main>
+        <form method="POST">
+            <!-- Mantener el tipo_registro del registro (no editable aquí) -->
+            <input type="hidden" name="tipo_registro" value="{{ mascota.tipo_registro }}">
+
+            <!-- Datos básicos -->
+            <fieldset class="fieldset">
+                <legend>Datos básicos</legend>
+                <div class="row">
+                    <input type="text" name="nombre" placeholder="Nombre" value="{{ mascota.nombre }}" required>
+                    <input type="text" name="especie" placeholder="Especie" value="{{ mascota.especie }}" required>
+                    <input type="text" name="raza" placeholder="Raza" value="{{ mascota.raza }}">
+                    <input type="number" name="edad" placeholder="Edad" value="{{ mascota.edad }}">
+                </div>
+                <div class="row">
+                    <input type="email" name="propietario_email" placeholder="Email propietario" value="{{ mascota.propietario_email }}" required>
+                    <input type="tel" name="propietario_telefono" placeholder="Teléfono propietario" value="{{ mascota.propietario_telefono }}" required>
+                    <input type="text" name="zona" placeholder="Zona" value="{{ mascota.zona }}" required>
+                </div>
+            </fieldset>
+
+            <!-- Atributos de la mascota -->
+            <fieldset class="fieldset">
+                <legend>Atributos de la mascota</legend>
+                <div class="row">
+                    <input type="text" name="color" placeholder="Color" value="{{ mascota.color }}" required>
+                    <select name="sexo" required>
+                        <option value="" disabled {% if not mascota.sexo %}selected{% endif %}>Sexo</option>
+                        <option value="macho" {% if mascota.sexo == 'macho' %}selected{% endif %}>macho</option>
+                        <option value="hembra" {% if mascota.sexo == 'hembra' %}selected{% endif %}>hembra</option>
+                    </select>
+                    <input type="text" name="chip" placeholder="Chip" value="{{ mascota.chip or '' }}">
+                </div>
+                <div class="row">
+                    <input type="number" name="peso" placeholder="Peso (kg)" step="0.1" min="0" value="{{ mascota.peso if mascota.peso is not none else '' }}">
+                    <select name="tamano">
+                        <option value="" {% if not mascota.tamano %}selected{% endif %}>Tamaño</option>
+                        <option value="pequeño" {% if mascota.tamano == 'pequeño' %}selected{% endif %}>pequeño</option>
+                        <option value="mediano" {% if mascota.tamano == 'mediano' %}selected{% endif %}>mediano</option>
+                        <option value="grande" {% if mascota.tamano == 'grande' %}selected{% endif %}>grande</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <textarea name="descripcion" placeholder="Descripción (opcional)">{{ mascota.descripcion or '' }}</textarea>
+                </div>
+            </fieldset>
+
+            <!-- Aparición (solo editable para tipo_registro == 'desaparecida') -->
+            <fieldset class="fieldset" id="fs-aparicion">
+                <legend>Aparición</legend>
+                <div class="row">
+                    <input type="date" name="fecha_aparecida"
+                           value="{{ mascota.fecha_aparecida.strftime('%Y-%m-%d') if mascota.fecha_aparecida else '' }}">
+                    <select name="estado_aparecida" id="estado_aparecida">
+                        <option value="" {% if not mascota.estado_aparecida %}selected{% endif %}>Estado (viva/muerta)</option>
+                        <option value="viva" {% if mascota.estado_aparecida == 'viva' %}selected{% endif %}>viva</option>
+                        <option value="muerta" {% if mascota.estado_aparecida == 'muerta' %}selected{% endif %}>muerta</option>
+                    </select>
+                </div>
+                <small>Si indicas fecha, selecciona también el estado.</small>
+            </fieldset>
+
+            <div class="actions">
+                <button type="submit">Confirmar modificación</button>
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    (function () {
+        // El bloque "Aparición" solo es editable/visible cuando el registro es de tipo DESAPARECIDA.
+        const tipo = (document.body.getAttribute('data-tipo') || '').toLowerCase();
+        const fsAparicion = document.getElementById('fs-aparicion');
+        const fecha = document.querySelector('input[name="fecha_aparecida"]');
+        const estado = document.getElementById('estado_aparecida');
+
+        function setAparicionEnabled(enabled) {
+            if (!fsAparicion) return;
+            if (enabled) {
+                fsAparicion.style.display = '';
+                if (fecha) fecha.disabled = false;
+                if (estado) estado.disabled = false;
+            } else {
+                // Ocultar y deshabilitar para que no se envíen valores por error
+                fsAparicion.style.display = 'none';
+                if (fecha) { fecha.value = ''; fecha.disabled = true; }
+                if (estado) { estado.value = ''; estado.disabled = true; }
+            }
+        }
+
+        // Reglas: solo para 'desaparecida'
+        setAparicionEnabled(tipo === 'desaparecida');
+
+        // Si hay fecha_aparecida, requerir estado_aparecida
+        function syncEstadoRequired() {
+            if (!fecha || !estado) return;
+            if (fecha.value) {
+                estado.setAttribute('required', 'required');
+            } else {
+                estado.removeAttribute('required');
+            }
+        }
+        if (fecha && estado) {
+            fecha.addEventListener('change', syncEstadoRequired);
+            document.addEventListener('DOMContentLoaded', syncEstadoRequired);
+            syncEstadoRequired();
+        }
+    })();
+</script>
+</body>
+</html>

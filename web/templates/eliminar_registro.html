@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Eliminar Mascota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <h1>Eliminar Mascota</h1>
+</header>
+
+<main>
+    <p>¿Estás seguro de que quieres eliminar el siguiente registro?</p>
+
+    <form method="POST">
+        <input type="text" name="nombre" placeholder="Nombre" value="{{ mascota.nombre }}" readonly>
+        <input type="text" name="especie" placeholder="Especie" value="{{ mascota.especie }}" readonly>
+        <input type="text" name="raza" placeholder="Raza" value="{{ mascota.raza }}" readonly>
+        <input type="number" name="edad" placeholder="Edad" value="{{ mascota.edad }}" readonly>
+        <input type="email" name="propietario_email" placeholder="Email propietario" value="{{ mascota.propietario_email }}" readonly>
+        <input type="tel" name="propietario_telefono" placeholder="Teléfono propietario" value="{{ mascota.propietario_telefono }}" readonly>
+        <input type="text" name="zona" placeholder="Zona" value="{{ mascota.zona }}" readonly>
+
+        <button type="submit" style="background-color:#e74c3c; color:white;">Confirmar eliminación</button>
+    </form>
+
+    <div style="text-align:center; margin-top:15px;">
+        <button class="btn-volver" onclick="window.location.href='{{ url_for('main.index') }}'">⬅ Volver al inicio</button>
+    </div>
+</main>
+
+<footer>
+    Web Mascotas - 2025
+</footer>
+</body>
+</html>

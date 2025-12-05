@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if modo == 'modificar' %}Editar Mascota{% else %}Crear Mascota{% endif %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body.layout-crear { font-size: 0.90rem; }
+        body.layout-crear .container { width: 98% !important; max-width: 1150px; margin: 0; }
+        body.layout-crear input,
+        body.layout-crear select,
+        body.layout-crear textarea,
+        body.layout-crear button { font-size: 0.90rem; }
+
+        .header-bar {
+            position: relative;
+            display: block;
+            margin-bottom: 2px;
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 2px 8px;
+        }
+        .header-bar h1 {
+            text-align: center;
+            margin: 2px 0 0 0;
+            line-height: 1.15;
+            color: #fff;
+        }
+        .btn-volver {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #19024e;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-volver:hover { background-color: #f23131; }
+
+        main { margin-top: 0; }
+
+        .flash-container { max-width: 1100px; margin: 0 auto 2px auto; }
+        .flash { padding: 6px 10px; border-radius: 3px; margin: 2px auto; font-weight: 600; max-width: 900px; }
+        .flash.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+        .flash.error   { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+
+        .row-compact { display:flex; flex-wrap:wrap; gap:5px; margin-top:0; }
+        .row-compact input,
+        .row-compact select,
+        .row-compact textarea { flex:1 1 160px; min-width:135px; padding:5px; }
+        textarea { min-height: 90px; }
+
+        .row-contacto input { flex: 1 1 240px; min-width: 200px; }
+        .row-contacto .campo-telefono { flex: 1 1 110px; min-width: 110px; display:flex; }
+        .row-contacto .campo-telefono input { flex:1 1 auto; }
+        .row-contacto .campo-nombre { flex: 1 1 210px; min-width: 190px; display:flex; }
+        .row-contacto .campo-nombre input { flex:1 1 auto; }
+
+        .row-identificacion { align-items: stretch; flex-wrap: nowrap; }
+        .row-identificacion .campo-ubicacion {
+            flex: 1.4 1 320px;
+            min-width: 260px;
+            display:flex;
+            gap:6px;
+        }
+        .campo-ubicacion .campo-codigo-postal {
+            flex: 0 0 90px;
+            display:flex;
+        }
+        .campo-ubicacion .campo-codigo-postal input {
+            text-align:center;
+            letter-spacing: 1px;
+        }
+        .campo-ubicacion .campo-zona {
+            flex: 1 1 auto;
+            display:flex;
+        }
+        .campo-ubicacion .campo-zona select,
+        .campo-ubicacion .campo-codigo-postal input { flex:1 1 auto; width:100%; }
+
+        .row-identificacion .campo-fecha-registro {
+            flex: 0 0 145px;
+            max-width: 145px;
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+        .row-identificacion .campo-fecha-registro .input-fecha-registro {
+            flex: 1 1 auto;
+            min-width: 100px;
+            text-align: center;
+            font-size: 0.90rem;
+            padding: 6px;
+        }
+        .row-identificacion .campo-fecha-registro .btn-date {
+            min-width: 30px;
+            padding: 5px;
+            background:#eee;
+            border:1px solid #ccc;
+            border-radius:6px;
+            cursor:pointer;
+        }
+        .row-identificacion .campo-fecha-registro .btn-date:hover { background:#ddd; }
+        #fecha_registro_picker {
+            position:absolute; width:0; height:0; opacity:0; border:0; padding:0; pointer-events:none;
+        }
+
+        .row-identificacion .campo-especie,
+        .row-identificacion .campo-raza,
+        .row-identificacion .campo-sexo {
+            flex: 0 1 145px;
+            min-width: 130px;
+            display:flex;
+        }
+        .row-identificacion .campo-sexo { flex: 0 1 120px; min-width: 115px; }
+        .row-identificacion .campo-especie input,
+        .row-identificacion .campo-raza input,
+        .row-identificacion .campo-sexo select { flex:1 1 auto; }
+
+        .row-caracteristicas { flex-wrap: nowrap; }
+        .row-caracteristicas input,
+        .row-caracteristicas select { flex:1 1 130px; min-width:115px; }
+
+        textarea[name="descripcion"] {
+            height: 36px;
+            min-height: 36px;
+            max-height: 36px;
+            resize: vertical;
+            overflow-y: auto;
+        }
+
+        .foto-uploader { border:1px solid #ccc; border-radius:10px; padding:8px; margin-top:6px; background:#f9f9f9; }
+        .foto-uploader-line { display:flex; align-items:center; gap:6px; flex-wrap: nowrap; }
+        .label-foto { font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+        .inline-group {
+            display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;
+        }
+        .inline-group select { flex: 0 0 190px; height: 25px; padding: 2px 8px; font-size: 0.88rem; line-height: 1.10; }
+        .inline-group input[type="file"] {
+            flex: 1 1 260px; min-width: 220px; max-width: 340px;
+            height: 25px; font-size: 0.88rem; line-height: 1.10; padding: 2px 6px;
+        }
+
+        .btn-add-foto {
+            background:#4CAF50;
+            color:#fff;
+            border:none;
+            padding:2px 6px;
+            border-radius:5px;
+            cursor:pointer;
+            flex:0 0 auto;
+            font-size: 0.72rem;
+            line-height: 1.05;
+            min-width: 0;
+            white-space: nowrap;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width: auto !important;
+            flex-shrink:0;
+        }
+        .btn-add-foto:hover { background:#45a049; }
+
+        .foto-lista { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; padding:0; }
+        .foto-item {
+            list-style:none;
+            background:#eef;
+            border-radius:10px;
+            min-width:110px;
+            max-width:140px;
+            flex:0 0 120px;
+            text-align:center;
+            box-shadow:0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: visible;
+        }
+        .foto-item figure { margin:0; display:flex; flex-direction:column; height:100%; }
+        .foto-item img { width:100%; height:100px; object-fit:cover; display:block; }
+        .foto-item figcaption { padding:4px 6px; font-size:0.82rem; font-weight:600; background:#dbe2ff; color:#2c3e50; text-transform:capitalize; }
+        .foto-item:hover { box-shadow:0 3px 8px rgba(0,0,0,0.18); }
+        .foto-item-vacio { background:none; box-shadow:none; cursor:default; min-width:220px; }
+
+        #btn-crear { margin-top: 6px; }
+        body, input, select, button, textarea { line-height: 1.20; }
+
+        input[placeholder*="(obligatorio)"]::placeholder,
+        textarea[placeholder*="(obligatorio)"]::placeholder,
+        input[required]::placeholder,
+        textarea[required]::placeholder {
+            font-weight: 700;
+            color: #333;
+            opacity: 1;
+        }
+
+        select:required:invalid { font-weight: 700; color: #333; }
+        select:required:not(:invalid) { font-weight: 400; }
+        select option[value=""] { font-weight: 700; }
+
+        @media (max-width: 980px) {
+            .row-identificacion,
+            .row-caracteristicas,
+            .foto-uploader-line,
+            .inline-group { flex-wrap: wrap; }
+            .campo-ubicacion { flex-wrap: wrap; }
+            .campo-ubicacion .campo-codigo-postal { flex: 1 1 120px; }
+            .label-foto { margin-bottom: 2px; }
+        }
+
+        body.layout-crear .header-bar h1 { font-weight: 600; }
+        body.layout-crear input[placeholder*="(obligatorio)"]::placeholder,
+        body.layout-crear textarea[placeholder*="(obligatorio)"]::placeholder,
+        body.layout-crear input[required]::placeholder,
+        body.layout-crear textarea[required]::placeholder { font-weight: 500; }
+        body.layout-crear select:required:invalid { font-weight: 500; }
+        body.layout-crear select option[value=""] { font-weight: 500; }
+        body.layout-crear .flash { font-weight: 500; }
+        body.layout-crear .label-foto { font-weight: 500; }
+        body.layout-crear .foto-item figcaption { font-weight: 500; }
+        body.layout-crear strong,
+        body.layout-crear b { font-weight: 600; }
+    </style>
+</head>
+{% set modo = modo or 'crear' %}
+{% set tipo_registro = (tipo_registro or 'desaparecida')|lower %}
+<body class="layout-crear" data-tipo_registro="{{ tipo_registro }}" data-modo="{{ modo }}">
+<div class="container">
+    <header class="header-bar">
+        <h1>
+            {% if modo == 'modificar' %}
+                Editar mascota {{ 'encontrada' if tipo_registro == 'encontrada' else 'desaparecida' }}
+            {% else %}
+                Crear nueva mascota {{ 'encontrada' if tipo_registro == 'encontrada' else 'desaparecida' }}
+            {% endif %}
+        </h1>
+        <a class="btn-volver" href="{{ url_for('main.index') }}">⬅ Volver al inicio</a>
+    </header>
+
+    <div class="flash-container">
+        {% with msgs = get_flashed_messages(with_categories=True) %}
+            {% if msgs %}
+                {% for cat, msg in msgs %}
+                    <div class="flash {{ cat }}">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main>
+        <form id="form-crear"
+              action="{{ form_action }}"
+              method="POST"
+              enctype="multipart/form-data">
+            <input type="hidden" name="tipo_registro" value="{{ tipo_registro }}">
+            <div id="fotos_eliminar_container"></div>
+
+            <!-- Fila 1 -->
+            <div class="row-compact row-contacto">
+                {% if tipo_registro == 'encontrada' %}
+                    <input type="email"
+                           name="propietario_email"
+                           placeholder="Email persona que lo encontró"
+                           value="{{ mascota.propietario_email if mascota else '' }}"
+                           required>
+                    <div class="campo-telefono">
+                        <input type="text"
+                               id="telefono"
+                               name="propietario_telefono"
+                               placeholder="Telefono (obligatorio)"
+                               maxlength="20"
+                               value="{{ mascota.propietario_telefono if mascota else '' }}"
+                               required>
+                    </div>
+                    <div class="campo-nombre">
+                        <input type="text"
+                               id="nombre"
+                               value="{{ mascota.nombre if mascota else 'encontrada' }}"
+                               placeholder="Nombre mascota"
+                               readonly>
+                    </div>
+                    <input type="hidden" name="nombre" value="{{ mascota.nombre if mascota else 'encontrada' }}">
+                {% else %}
+                    <input type="email"
+                           name="propietario_email"
+                           placeholder="Email propietario (obligatorio)"
+                           value="{{ mascota.propietario_email if mascota else '' }}"
+                           required>
+                    <div class="campo-telefono">
+                        <input type="text"
+                               id="telefono"
+                               name="propietario_telefono"
+                               placeholder="Telefono (obligatorio)"
+                               maxlength="20"
+                               value="{{ mascota.propietario_telefono if mascota else '' }}"
+                               required>
+                    </div>
+                    <div class="campo-nombre">
+                        <input type="text"
+                               id="nombre"
+                               name="nombre"
+                               placeholder="Nombre mascota (obligatorio)"
+                               maxlength="30"
+                               value="{{ mascota.nombre if mascota else '' }}"
+                               required>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Fila 2 -->
+            <div class="row-compact row-identificacion">
+                <div class="campo-ubicacion">
+                    <div class="campo-codigo-postal">
+                        <input type="text"
+                               name="codigo_postal"
+                               id="codigo_postal"
+                               placeholder="C. Postal (obl)"
+                               value="{{ mascota.codigo_postal if mascota else '' }}"
+                               maxlength="5"
+                               pattern="\d{5}"
+                               inputmode="numeric"
+                               autocomplete="postal-code"
+                               required>
+                    </div>
+                    <div class="campo-zona">
+                        <select name="zona"
+                                id="zona"
+                                required
+                                data-placeholder="Localidad (obl)"
+                                data-zona-inicial="{{ mascota.zona if mascota and mascota.zona else '' }}"
+                                {% if not mascota or not mascota.zona %}disabled{% endif %}>
+                            {% if mascota and mascota.zona %}
+                                <option value="{{ mascota.zona }}">{{ mascota.zona }}</option>
+                            {% else %}
+                                <option value="">Localidad (obl)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="campo-fecha-registro">
+                    <input type="text"
+                           id="fecha_registro"
+                           name="fecha_registro"
+                           class="input-fecha-registro"
+                           placeholder="Fecha (obl)"
+                           maxlength="10"
+                           pattern="\d{2}/\d{2}/\d{4}"
+                           title="Formato requerido: dd/mm/aaaa"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           value="{{ mascota.fecha_registro.strftime('%d/%m/%Y') if mascota and mascota.fecha_registro else '' }}"
+                           required>
+                    <button type="button"
+                            class="btn-date"
+                            id="btn_fecha_registro_picker"
+                            title="Seleccionar con calendario">
+                        <span aria-hidden="true">📅</span>
+                    </button>
+                    <input type="date" id="fecha_registro_picker" aria-hidden="true" tabindex="-1">
+                </div>
+
+                <div class="campo-especie">
+                    <input type="text"
+                           id="especie"
+                           name="especie"
+                           placeholder="Especie (obligatorio)"
+                           value="{{ mascota.especie if mascota else '' }}"
+                           required>
+                </div>
+
+                <div class="campo-raza">
+                    <input type="text"
+                           id="raza"
+                           name="raza"
+                           placeholder="{{ 'Raza (obligatorio)' if tipo_registro == 'desaparecida' else 'Raza(opcional)' }}"
+                           value="{{ mascota.raza if mascota else '' }}"
+                           {% if tipo_registro == 'desaparecida' %}required{% endif %}>
+                </div>
+
+                <div class="campo-sexo">
+                    <select name="sexo"
+                            {% if tipo_registro == 'desaparecida' %}required{% endif %}>
+                        <option value="" disabled
+                                {% if not mascota or not mascota.sexo %}selected{% endif %}
+                                {% if tipo_registro == 'desaparecida' %}data-obligatorio="1"{% endif %}>
+                            {{ 'Sexo (obl)' if tipo_registro == 'desaparecida' else 'Sexo (opcional)' }}
+                        </option>
+                        <option value="macho" {% if mascota and mascota.sexo == 'macho' %}selected{% endif %}>macho</option>
+                        <option value="hembra" {% if mascota and mascota.sexo == 'hembra' %}selected{% endif %}>hembra</option>
+                        <option value="no_sabe" {% if mascota and mascota.sexo == 'no_sabe' %}selected{% endif %}>no sabe</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila 3 -->
+            <div class="row-compact row-caracteristicas">
+                <input type="text"
+                       name="color"
+                       placeholder="Color (obligatorio)"
+                       value="{{ mascota.color if mascota else '' }}"
+                       required>
+                <select name="tamano" required>
+                    <option value="" disabled data-obligatorio="1"
+                            {% if not mascota or not mascota.tamano %}selected{% endif %}>
+                        Tamaño (obligatorio)
+                    </option>
+                    <option value="pequeño" {% if mascota and mascota.tamano == 'pequeño' %}selected{% endif %}>pequeño</option>
+                    <option value="mediano" {% if mascota and mascota.tamano == 'mediano' %}selected{% endif %}>mediano</option>
+                    <option value="grande" {% if mascota and mascota.tamano == 'grande' %}selected{% endif %}>grande</option>
+                </select>
+                <input type="number"
+                       id="edad"
+                       name="edad"
+                       placeholder="Edad"
+                       min="0"
+                       value="{{ mascota.edad if mascota and mascota.edad is not none else '' }}">
+                <input type="number"
+                       name="peso"
+                       placeholder="Peso (kg)"
+                       step="0.1"
+                       min="0"
+                       value="{{ ('%.2f'|format(mascota.peso)).rstrip('0').rstrip('.') if mascota and mascota.peso is not none else '' }}">
+                <input type="text"
+                       name="chip"
+                       placeholder="Chip (opcional)"
+                       value="{{ mascota.chip if mascota else '' }}">
+            </div>
+
+            <!-- Fila 4 -->
+            <div class="row-compact">
+                <textarea name="descripcion"
+                          rows="1"
+                          placeholder="Descripción de mascota, carácter, particularidades">{{ mascota.descripcion if mascota and mascota.descripcion else '' }}</textarea>
+            </div>
+
+            <div class="foto-uploader">
+                <div class="foto-uploader-line">
+                    <span class="label-foto">Subir fotografías (opcional)</span>
+                    <div class="inline-group">
+                        <select id="tipo_foto_visible">
+                            <option value="" disabled selected>Seleccionar tipo de foto</option>
+                            <option value="cara">Cara</option>
+                            <option value="frontal">Frontal</option>
+                            <option value="lateral_izquierdo">Lateral Izquierdo</option>
+                            <option value="lateral_derecho">Lateral Derecho</option>
+                            <option value="trasero">Trasero</option>
+                        </select>
+                        <input type="file" id="archivo_foto_visible" accept="image/*">
+                        <button type="button" class="btn-add-foto" onclick="agregarFoto()">+ Añadir foto</button>
+                    </div>
+                </div>
+
+                <ul class="foto-lista" id="lista_fotos">
+                    <li class="foto-item foto-item-vacio" id="sin_fotos"><i>No se han añadido fotos todavía.</i></li>
+                </ul>
+            </div>
+
+            <button id="btn-crear" type="submit">
+                {% if modo == 'modificar' %}
+                    Guardar cambios
+                {% else %}
+                    {{ 'Crear mascota encontrada' if tipo_registro == 'encontrada' else 'Crear mascota' }}
+                {% endif %}
+            </button>
+        </form>
+    </main>
+</div>
+
+<script>
+    const modoFormulario = document.body.dataset.modo;
+    const tipoRegistro = document.body.dataset.tipo_registro;
+
+    const fotosPersistentesData = {{ (fotos_existentes or []) | tojson }};
+
+    const fotosPersistentes = Array.isArray(fotosPersistentesData)
+        ? fotosPersistentesData.map(f => ({
+            id: `exist-${f.id}`,
+            tipo_foto: f.tipo_foto,
+            preview: f.url,
+            esNueva: false,
+            foto_db_id: f.id,
+            eliminada: false
+        }))
+        : [];
+
+    const fotosBuffer = [];
+    const fotosEliminarIds = new Set();
+    let fotoSecuencia = 0;
+
+    const fechaInputRegistro  = document.getElementById("fecha_registro");
+    const fechaPickerRegistro = document.getElementById("fecha_registro_picker");
+    const btnfechaPickerRegistro = document.getElementById("btn_fecha_registro_picker");
+    const contenedorEliminar = document.getElementById("fotos_eliminar_container");
+
+    const inputCP = document.getElementById("codigo_postal");
+    const selectZona = document.getElementById("zona");
+    const zonaPlaceholder = selectZona ? selectZona.dataset.placeholder || "Localidad (obl)" : "Localidad (obl)";
+    const zonaInicial = selectZona ? selectZona.dataset.zonaInicial || "" : "";
+
+    const baseLocalidadesUrl = "{{ url_for('main.api_localidades', codigo_postal='__CP__') }}";
+
+    let ultimoCPConsultado = "";
+    let alertaMostradaParaCP = "";
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const isoHoy = new Date().toLocaleDateString('en-CA');
+    if (fechaPickerRegistro) {
+        fechaPickerRegistro.max = isoHoy;
+    }
+
+    function resetLocalidades() {
+        if (!selectZona) return;
+        selectZona.innerHTML = `<option value="">${zonaPlaceholder}</option>`;
+        selectZona.value = "";
+        selectZona.disabled = true;
+    }
+
+    async function cargarLocalidadesPorCP(cp, localidadPorSeleccionar = "") {
+        if (!selectZona) return;
+
+        const cpNormalizado = (cp || "").trim();
+        if (!/^\d{5}$/.test(cpNormalizado)) {
+            ultimoCPConsultado = "";
+            resetLocalidades();
+            return;
+        }
+        if (cpNormalizado === ultimoCPConsultado) return;
+        ultimoCPConsultado = cpNormalizado;
+
+        resetLocalidades();
+
+        const optionLoading = document.createElement("option");
+        optionLoading.value = "";
+        optionLoading.textContent = "Cargando...";
+        selectZona.appendChild(optionLoading);
+        selectZona.disabled = true;
+
+        try {
+            const url = baseLocalidadesUrl.replace("__CP__", cpNormalizado);
+            const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+
+            if (!resp.ok) throw new Error(`Error consultando CP (${resp.status})`);
+            const data = await resp.json();
+
+            resetLocalidades();
+
+            if (!Array.isArray(data.localidades) || !data.localidades.length) {
+                if (alertaMostradaParaCP !== cpNormalizado) {
+                    alert("Código postal no encontrado en el catálogo.");
+                    alertaMostradaParaCP = cpNormalizado;
+                }
+                inputCP.value = "";
+                inputCP.focus();
+                ultimoCPConsultado = "";
+                return;
+            }
+
+            alertaMostradaParaCP = "";
+
+            data.localidades.forEach(loc => {
+                const opt = document.createElement("option");
+                opt.value = loc;
+                opt.textContent = loc;
+                selectZona.appendChild(opt);
+            });
+
+            selectZona.disabled = false;
+
+            if (localidadPorSeleccionar && data.localidades.includes(localidadPorSeleccionar)) {
+                selectZona.value = localidadPorSeleccionar;
+            } else if (data.localidades.length === 1) {
+                selectZona.value = data.localidades[0];
+            }
+        } catch (err) {
+            console.error(err);
+            alert("No se pudo obtener la localidad para ese código postal.");
+            resetLocalidades();
+            ultimoCPConsultado = "";
+        }
+    }
+
+    if (inputCP && selectZona) {
+        inputCP.addEventListener("input", (e) => {
+            const soloDigitos = e.target.value.replace(/\D/g, "").slice(0, 5);
+            e.target.value = soloDigitos;
+            ultimoCPConsultado = "";
+            if (soloDigitos.length === 5) {
+                cargarLocalidadesPorCP(soloDigitos);
+            } else {
+                resetLocalidades();
+            }
+        });
+
+        inputCP.addEventListener("blur", (e) => {
+            const val = e.target.value.trim();
+            if (val.length === 5) {
+                cargarLocalidadesPorCP(val, selectZona.value || zonaInicial);
+            } else {
+                resetLocalidades();
+                ultimoCPConsultado = "";
+            }
+
+         function avisarCPIncompleto() {
+        inputCP.setCustomValidity("Introduce los 5 dígitos del código postal.");
+        inputCP.reportValidity();
+        setTimeout(() => inputCP.focus(), 0);
+    }
+
+        inputCP.addEventListener("keydown", (e) => {
+            if (e.key === "Tab" && inputCP.value.length < 5) {
+                e.preventDefault();
+                avisarCPIncompleto();
+            }
+        });
+
+        inputCP.addEventListener("blur", () => {
+            if (inputCP.value.length < 5) {
+                avisarCPIncompleto();
+                resetLocalidades();
+            } else {
+                inputCP.setCustomValidity("");
+            }
+        });
+
+        inputCP.addEventListener("input", () => {
+            if (inputCP.value.length === 5) {
+                inputCP.setCustomValidity("");
+            }
+        });
+
+        });
+
+        {% if mascota and mascota.codigo_postal %}
+            cargarLocalidadesPorCP('{{ mascota.codigo_postal }}', "{{ mascota.zona or '' }}");
+        {% endif %}
+    }
+
+    function displayToIso(display) {
+        const match = display.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return "";
+        const [, d, m, y] = match;
+        return `${y}-${m}-${d}`;
+    }
+
+    function isoToDisplay(iso) {
+        const [y, m, d] = iso.split("-");
+        if (!y || !m || !d) return "";
+        return `${d.padStart(2,"0")}/${m.padStart(2,"0")}/${y}`;
+    }
+
+    function esFechaFutura(display) {
+        const match = display.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return false;
+        const [, d, m, y] = match;
+        const fecha = new Date(`${y}-${m}-${d}T00:00:00`);
+        if (isNaN(fecha.getTime())) return false;
+        return fecha > hoy;
+    }
+
+    function abrirCalendario() {
+        if (!fechaPickerRegistro) return;
+        const iso = displayToIso(fechaInputRegistro.value.trim());
+        fechaPickerRegistro.value = iso || "";
+        if (fechaPickerRegistro.showPicker) fechaPickerRegistro.showPicker();
+        else fechaPickerRegistro.focus();
+    }
+
+    if (btnfechaPickerRegistro) {
+        btnfechaPickerRegistro.addEventListener("click", (e) => {
+            e.preventDefault();
+            abrirCalendario();
+        });
+    }
+
+    if (fechaInputRegistro) {
+        fechaInputRegistro.addEventListener("focus", () => fechaInputRegistro.select());
+        fechaInputRegistro.addEventListener("keydown", (ev) => {
+            if (ev.key === "ArrowDown") {
+                ev.preventDefault();
+                abrirCalendario();
+            }
+        });
+        fechaInputRegistro.addEventListener("blur", () => {
+            const val = fechaInputRegistro.value.trim();
+            if (!val) {
+                fechaInputRegistro.setCustomValidity("");
+                return;
+            }
+            const digits = val.replace(/\D/g, "");
+            if (digits.length === 8) {
+                const d = digits.slice(0,2), m = digits.slice(2,4), y = digits.slice(4);
+                fechaInputRegistro.value = `${d}/${m}/${y}`;
+            }
+            const normalizado = fechaInputRegistro.value.trim();
+            if (!normalizado) {
+                fechaInputRegistro.setCustomValidity("");
+                return;
+            }
+            if (esFechaFutura(normalizado)) {
+                fechaInputRegistro.value = "";
+                fechaInputRegistro.setCustomValidity("La fecha no puede ser futura.");
+                fechaInputRegistro.reportValidity();
+                fechaInputRegistro.focus();
+            } else {
+                fechaInputRegistro.setCustomValidity("");
+            }
+        });
+    }
+
+    if (fechaPickerRegistro) {
+        fechaPickerRegistro.addEventListener("change", () => {
+            if (!fechaPickerRegistro.value) return;
+            const display = isoToDisplay(fechaPickerRegistro.value);
+            if (display) {
+                if (esFechaFutura(display)) {
+                    fechaPickerRegistro.value = "";
+                    fechaInputRegistro.value = "";
+                    fechaInputRegistro.setCustomValidity("La fecha no puede ser futura.");
+                    fechaInputRegistro.reportValidity();
+                    fechaInputRegistro.focus();
+                    return;
+                }
+                fechaInputRegistro.value = display;
+                fechaInputRegistro.setCustomValidity("");
+                fechaInputRegistro.dispatchEvent(new Event("input"));
+                fechaInputRegistro.focus();
+            }
+        });
+    }
+
+    function formatearTipoFoto(texto) {
+        return texto.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function registrarFotoEliminada(id) {
+        if (fotosEliminarIds.has(id)) return;
+        fotosEliminarIds.add(id);
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "fotos_eliminar_id";
+        input.value = id;
+        contenedorEliminar.appendChild(input);
+    }
+
+    function sincronizarOpcionesTipoFoto() {
+        const select = document.getElementById("tipo_foto_visible");
+        if (!select) return;
+        const tiposUsados = new Set();
+        fotosPersistentes.forEach(f => {
+            if (!f.eliminada) tiposUsados.add(f.tipo_foto);
+        });
+        fotosBuffer.forEach(f => tiposUsados.add(f.tipo_foto));
+
+        Array.from(select.options).forEach(option => {
+            if (!option.value) return;
+            option.disabled = tiposUsados.has(option.value);
+        });
+        if (select.value && select.options[select.selectedIndex]?.disabled) {
+            select.selectedIndex = 0;
+        }
+    }
+
+    function renderListaFotos() {
+        const lista = document.getElementById("lista_fotos");
+        lista.innerHTML = "";
+        const fotosActivas = [];
+
+        fotosPersistentes.forEach(f => {
+            if (!f.eliminada) fotosActivas.push(f);
+        });
+        fotosBuffer.forEach(f => fotosActivas.push(f));
+
+        if (!fotosActivas.length) {
+            const vacio = document.createElement("li");
+            vacio.className = "foto-item foto-item-vacio";
+            vacio.innerHTML = "<i>No se han añadido fotos todavía.</i>";
+            lista.appendChild(vacio);
+            sincronizarOpcionesTipoFoto();
+            return;
+        }
+
+        fotosActivas.forEach(foto => {
+            const li = document.createElement("li");
+            li.className = "foto-item";
+            li.dataset.id = foto.id;
+            li.dataset.tipoFoto = foto.tipo_foto;
+            li.dataset.esNueva = foto.esNueva ? "1" : "0";
+            if (!foto.esNueva) {
+                li.dataset.fotoDbId = foto.foto_db_id;
+            }
+
+            const figure = document.createElement("figure");
+
+            const img = document.createElement("img");
+            img.src = foto.preview;
+            img.alt = foto.tipo_foto;
+
+            const cap = document.createElement("figcaption");
+            cap.textContent = formatearTipoFoto(foto.tipo_foto);
+
+            const btnRemove = document.createElement("button");
+            btnRemove.type = "button";
+            btnRemove.className = "btn-remove-foto";
+            btnRemove.setAttribute("aria-label", "Eliminar esta foto");
+            btnRemove.textContent = "🗑️";
+            btnRemove.addEventListener("click", (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                eliminarFoto(foto);
+            });
+
+            figure.appendChild(img);
+            figure.appendChild(cap);
+            li.appendChild(figure);
+            li.appendChild(btnRemove);
+
+            lista.appendChild(li);
+        });
+        sincronizarOpcionesTipoFoto();
+    }
+
+    function agregarFoto() {
+        const tipo_fotoSel = document.getElementById("tipo_foto_visible");
+        const tipo_foto = tipo_fotoSel.value;
+        const fileInput = document.getElementById("archivo_foto_visible");
+        const file = fileInput.files[0];
+
+        if (!tipo_foto) { alert("Selecciona un tipo de foto."); return; }
+        if (!file) { alert("Selecciona un archivo de imagen."); return; }
+        if (!file.type.startsWith("image/")) { alert("Solo se permiten archivos de imagen."); return; }
+
+        const tipoOcupado = fotosPersistentes.some(f => !f.eliminada && f.tipo_foto === tipo_foto)
+                         || fotosBuffer.some(f => f.tipo_foto === tipo_foto);
+        if (tipoOcupado) {
+            alert("Ya hay una foto con ese tipo. Elimina la existente si quieres reemplazarla.");
+            tipo_fotoSel.focus();
+            return;
+        }
+
+        const lector = new FileReader();
+        lector.onload = (ev) => {
+            fotosBuffer.push({
+                id: ++fotoSecuencia,
+                tipo_foto,
+                file,
+                preview: ev.target.result,
+                esNueva: true
+            });
+            renderListaFotos();
+        };
+        lector.readAsDataURL(file);
+
+        tipo_fotoSel.selectedIndex = 0;
+        fileInput.value = "";
+    }
+
+    function eliminarFoto(foto) {
+        if (foto.esNueva) {
+            const indice = fotosBuffer.findIndex(f => f.id === foto.id);
+            if (indice >= 0) {
+                fotosBuffer.splice(indice, 1);
+            }
+        } else {
+            if (!foto.eliminada) {
+                foto.eliminada = true;
+                registrarFotoEliminada(foto.foto_db_id);
+            }
+        }
+        renderListaFotos();
+    }
+
+    renderListaFotos();
+
+    document.getElementById("form-crear").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const btn = document.getElementById("btn-crear");
+        const originalText = btn.textContent;
+
+        if (fechaInputRegistro) {
+            const val = fechaInputRegistro.value.trim();
+            const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+            if (!regex.test(val)) {
+                fechaInputRegistro.setCustomValidity("Introduce la fecha en formato dd/mm/aaaa.");
+                fechaInputRegistro.reportValidity();
+                return;
+            }
+            if (esFechaFutura(val)) {
+                fechaInputRegistro.setCustomValidity("La fecha no puede ser futura.");
+                fechaInputRegistro.reportValidity();
+                fechaInputRegistro.focus();
+                return;
+            }
+            fechaInputRegistro.setCustomValidity("");
+        }
+
+        if (selectZona && (selectZona.disabled || !selectZona.value)) {
+            alert("Selecciona una localidad válida para el código postal indicado.");
+            selectZona.focus();
+            return;
+        }
+
+        btn.disabled = true
+        btn.textContent = "Guardando...";
+
+        try {
+            const formData = new FormData(form);
+            fotosBuffer.forEach(foto => {
+                formData.append("fotos", foto.file, foto.file.name);
+                formData.append("fotos_tipo", foto.tipo_foto);
+            });
+
+            const resp = await fetch(form.action, {
+                method: form.method,
+                body: formData
+            });
+
+            if (resp.redirected) {
+                window.location.href = resp.url;
+                return;
+            }
+
+            const texto = await resp.text();
+            document.open();
+            document.write(texto);
+            document.close();
+        } catch (err) {
+            console.error(err);
+            alert("Ocurrió un error al enviar el formulario.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Modificar o Eliminar Mascotas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="container">
+    <header class="header-bar">
+        <h1>Modificar o Eliminar Mascotas</h1>
+        <button class="btn-volver" onclick="window.location.href='{{ url_for('main.index') }}'">⬅ Volver al inicio</button>
+    </header>
+
+    <!-- Mensajes flash -->
+    {% with msgs = get_flashed_messages(with_categories=True) %}
+        {% if msgs %}
+            <div class="flash-container" style="max-width:960px;margin:12px auto;">
+                {% for cat, msg in msgs %}
+                    <div class="flash {{ cat }}">{{ msg }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% set tipo_pref = (request.form.get('tipo_registro') or (request.args.get('tipo') or 'todas')).lower() %}
+    <form method="POST" style="text-align:center;">
+        <!-- Primera línea de filtros (igual que en Buscar) -->
+        <div class="form-row">
+            <select name="tipo_registro" required>
+                <option value="" disabled {% if tipo_pref not in ['desaparecida','encontrada','todas'] %}selected{% endif %}>Tipo de registro</option>
+                <option value="desaparecida" {% if tipo_pref == 'desaparecida' %}selected{% endif %}>desaparecida</option>
+                <option value="encontrada" {% if tipo_pref == 'encontrada' %}selected{% endif %}>encontrada</option>
+                <option value="todas" {% if tipo_pref == 'todas' %}selected{% endif %}>todas</option>
+            </select>
+
+            <input type="text" name="nombre" placeholder="Nombre mascota" value="{{ request.form.get('nombre','') }}">
+            <input type="text" name="especie" placeholder="Especie" value="{{ request.form.get('especie','') }}">
+            <input type="text" name="raza" placeholder="Raza" value="{{ request.form.get('raza','') }}">
+            <input type="text" name="zona" placeholder="Zona" value="{{ request.form.get('zona','') }}">
+            <input type="text" name="color" placeholder="Color" value="{{ request.form.get('color','') }}">
+
+            <select name="tamano">
+                <option value="" {% if not request.form.get('tamano') %}selected{% endif %}>Tamaño</option>
+                <option value="pequeño" {% if request.form.get('tamano')=='pequeño' %}selected{% endif %}>pequeño</option>
+                <option value="mediano" {% if request.form.get('tamano')=='mediano' %}selected{% endif %}>mediano</option>
+                <option value="grande" {% if request.form.get('tamano')=='grande' %}selected{% endif %}>grande</option>
+            </select>
+
+            <input type="text" name="descripcion" placeholder="Descripción" value="{{ request.form.get('descripcion','') }}">
+
+            <select name="sexo">
+                <option value="" {% if not request.form.get('sexo') %}selected{% endif %}>Sexo</option>
+                <option value="macho" {% if request.form.get('sexo')=='macho' %}selected{% endif %}>macho</option>
+                <option value="hembra" {% if request.form.get('sexo')=='hembra' %}selected{% endif %}>hembra</option>
+                <option value="no_sabe" {% if request.form.get('sexo')=='no_sabe' %}selected{% endif %}>no sabe</option>
+            </select>
+
+            <input type="text" name="chip" placeholder="Chip" value="{{ request.form.get('chip','') }}">
+            <input type="number" name="peso" placeholder="Peso (kg)" step="0.1" min="0" value="{{ request.form.get('peso','') }}">
+            <input type="number" name="edad" placeholder="Edad" min="0" value="{{ request.form.get('edad','') }}">
+        </div>
+
+        <!-- Segunda línea de filtros (igual que en Buscar) -->
+        <div class="form-row">
+            <input type="email" name="propietario_email" placeholder="Email Propietario" maxlength="40" value="{{ request.form.get('propietario_email','') }}">
+            <input type="text" name="propietario_telefono" placeholder="Teléfono" value="{{ request.form.get('propietario_telefono','') }}">
+
+            <input type="text" name="fecha_registro" placeholder="Fecha registrada (dd/mm/aaaa)" value="{{ request.form.get('fecha_registro','') }}">
+            <input type="date" name="fecha_aparecida" value="{{ request.form.get('fecha_aparecida','') }}">
+
+            <select name="estado_aparecida">
+                <option value="" {% if not request.form.get('estado_aparecida') %}selected{% endif %}>Estado aparecida</option>
+                <option value="viva" {% if request.form.get('estado_aparecida')=='viva' %}selected{% endif %}>viva</option>
+                <option value="muerta" {% if request.form.get('estado_aparecida')=='muerta' %}selected{% endif %}>muerta</option>
+            </select>
+
+            <button type="submit" class="btn-buscar">BUSCAR</button>
+        </div>
+    </form>
+
+    {% if mensaje %}
+        <p class="mensaje">{{ mensaje }}</p>
+    {% endif %}
+
+    <div style="margin-top:12px;">
+        {% if mascotas and mascotas|length > 0 %}
+            {% for mascota in mascotas %}
+                <div class="mascota-card">
+                    <div class="mascota-card-content" style="display:flex; gap:12px; align-items:flex-start;">
+                        <!-- COLUMNA IZQUIERDA: info + fotos -->
+                        <div class="col-main" style="flex:2; min-width:0;">
+                            <div class="mascota-info mascota-info-grid">
+                                <!-- Columna 1: mismo orden que la primera fila del formulario -->
+                                <div class="info-col">
+                                    <span><b>Tipo registro:</b> {{ mascota.tipo_registro }}</span>
+                                    <span><b>Nombre mascota:</b> {{ mascota.nombre }}</span>
+                                    <span><b>Especie:</b> {{ mascota.especie }}</span>
+                                    <span><b>Raza:</b> {{ mascota.raza }}</span>
+                                    <span><b>Zona:</b> {{ mascota.zona or '—' }}</span>
+                                    <span><b>Color:</b> {{ mascota.color or '—' }}</span>
+                                    <span><b>Tamaño:</b> {{ mascota.tamano or '—' }}</span>
+                                    <span><b>Descripción:</b> {{ mascota.descripcion or '—' }}</span>
+                                    <span><b>Sexo:</b> {{ mascota.sexo or '—' }}</span>
+                                    <span><b>Chip:</b> {{ mascota.chip or '—' }}</span>
+                                    <span><b>Peso (kg):</b> {{ (mascota.peso|string ~ ' kg') if mascota.peso is not none else '—' }}</span>
+                                    <span><b>Edad:</b> {{ mascota.edad if mascota.edad is not none else '—' }}</span>
+                                </div>
+                                <!-- Columna 2: mismo orden que la segunda fila del formulario -->
+                                <div class="info-col">
+                                    <span><b>Email propietario:</b> {{ mascota.propietario_email or '—' }}</span>
+                                    <span><b>Teléfono:</b> {{ mascota.propietario_telefono or '—' }}</span>
+                                    <span><b>Fecha registrada:</b> {{ mascota.fecha_registro.strftime('%d/%m/%Y') if mascota.fecha_registro else '—' }}</span>
+                                    <span><b>Fecha aparecida:</b> {{ mascota.fecha_aparecida.strftime('%d/%m/%Y') if mascota.fecha_aparecida else '—' }}</span>
+                                    <span><b>Estado aparecida:</b> {{ mascota.estado_aparecida or '—' }}</span>
+                                </div>
+                            </div>
+
+                            <div class="foto-bloque">
+                                <b>Fotos:</b>
+                                {% if mascota.fotos %}
+                                    <div class="foto-thumbs">
+                                        {% for foto in mascota.fotos %}
+                                            <div class="thumb">
+                                                <img class="js-lb" src="/{{ foto.ruta }}" alt="{{ foto.tipo_foto or foto.tipo }}" data-cap="{{ mascota.nombre }} — {{ foto.tipo_foto or foto.tipo }}">
+                                                <div class="cap">{{ foto.tipo_foto or foto.tipo }}</div>
+                                                <form method="POST" action="{{ url_for('main.eliminar_foto', foto_id=foto.id) }}">
+                                                    <button type="submit" class="btn-buscar" style="padding:4px 8px;">Borrar</button>
+                                                </form>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div style="margin-top:6px;"><i>Sin fotos registradas.</i></div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- COLUMNA DERECHA: añadir foto + acciones -->
+                        <div class="col-side" style="flex:1; min-width:240px;">
+                            <div class="add-foto" style="margin-top:4px; padding:8px; background:#f1f1f1; border-radius:6px;">
+                                <form method="POST" action="{{ url_for('main.agregar_foto', mascota_id=mascota.id) }}" enctype="multipart/form-data">
+                                    <label>Tipo:</label>
+                                    <select name="tipo_foto" required>
+                                        <option value="" disabled selected>Seleccionar tipo</option>
+                                        <option value="cara">Cara</option>
+                                        <option value="frontal">Frontal</option>
+                                        <option value="lateral_izquierdo">Lateral Izquierdo</option>
+                                        <option value="lateral_derecho">Lateral Derecho</option>
+                                        <option value="trasero">Trasero</option>
+                                    </select>
+                                    <input type="file" name="foto" accept="image/*" required>
+                                    <button type="submit" class="btn-buscar">+ Añadir foto</button>
+                                </form>
+                            </div>
+
+                            <div style="margin-top:10px;">
+                                <button class="btn-buscar" onclick="window.location.href='{{ url_for('main.modificar_registro', id=mascota.id) }}'">Modificar</button>
+                                <button class="btn-buscar" style="background:#e74c3c !important;" onclick="window.location.href='{{ url_for('main.eliminar_registro', id=mascota.id) }}'">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% elif busqueda_realizada %}
+            <p style="text-align:center;">No se encontraron mascotas.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Lightbox overlay -->
+<div id="lightbox" class="lb-overlay" aria-hidden="true">
+    <div class="lb-inner">
+        <img id="lb-img" class="lb-img" src="" alt="">
+        <div id="lb-cap" class="lb-caption"></div>
+        <button type="button" id="lb-close" class="lb-close" aria-label="Cerrar">×</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const overlay = document.getElementById('lightbox');
+        const img = document.getElementById('lb-img');
+        const cap = document.getElementById('lb-cap');
+        const btnClose = document.getElementById('lb-close');
+
+        function openLB(src, caption, alt) {
+            img.src = src;
+            img.alt = alt || '';
+            cap.textContent = caption || '';
+            overlay.classList.add('show');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeLB() {
+            overlay.classList.remove('show');
+            overlay.setAttribute('aria-hidden', 'true');
+            img.src = '';
+            img.alt = '';
+            cap.textContent = '';
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('click', function(e) {
+            const t = e.target;
+            if (t && t.classList.contains('js-lb')) {
+                const src = t.getAttribute('src');
+                const caption = t.getAttribute('data-cap') || t.getAttribute('alt') || '';
+                openLB(src, caption, t.getAttribute('alt'));
+            }
+        });
+        btnClose.addEventListener('click', closeLB);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeLB(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLB(); });
+    })();
+</script>
+</body>
+</html>

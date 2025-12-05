@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar Eliminación</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .confirm-card {
+            background-color: #fff3f3;
+            border: 1px solid #e74c3c;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 500px;
+            margin: 40px auto;
+        }
+        .confirm-card h3 { color: #e74c3c; margin-bottom: 20px; }
+        .confirm-card p { margin-bottom: 15px; }
+        .btn-confirmar {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-confirmar:hover { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+<div class="confirm-card">
+    <h3>¿Eliminar esta mascota?</h3>
+    <p><b>{{ mascota.nombre }}</b> ({{ mascota.especie }})</p>
+    <p>Propietario: {{ mascota.propietario_email }}</p>
+
+    <form method="POST" style="display:inline;">
+        <button type="submit" class="btn-confirmar">🗑️ Confirmar eliminación</button>
+    </form>
+
+    <button class="btn-volver" onclick="window.location.href='{{ url_for('main.index') }}'">⬅ Cancelar</button>
+</div>
+</body>
+</html>

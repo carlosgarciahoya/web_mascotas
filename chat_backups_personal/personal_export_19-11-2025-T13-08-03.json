@@ -1,0 +1,188 @@
+{
+  "history": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "El error aparece porque el Graph API Explorer está intentando incluir el scope `pages_read_engagement` en la solicitud del token, pero tu app no lo tiene habilitado (ni lo necesitas). Para solucionarlo basta con quitar ese permiso de la lista cuando generas el token.\n\n### Cómo hacerlo en el Graph API Explorer\n\n1. Abre <https://developers.facebook.com/tools/explorer> y selecciona tu aplicación.\n2. Pulsa en **Generate Access Token → User Token**.\n3. En la ventana emergente de permisos, revisa la lista:\n   - **Desmarca** `pages_read_engagement` si aparece seleccionado.\n   - Deja marcados solo los que necesitas:\n     - `pages_manage_posts`\n     - `pages_show_list`\n     - (También puedes dejar `public_profile`, que es básico.)\n4. Acepta. Se generará el token de usuario sin ese scope y ya no verás el error “Invalid Scopes: pages_read_engagement”.\n\nAhora podrás continuar con los pasos restantes (hacer el `GET /me/accounts` para obtener el Page Access Token y, posteriormente, la llamada `POST /{page-id}/feed`)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "ni idea de como ejecutar esto : \n4. **Haz una llamada de prueba para completar el permiso**  \n   Con ese Page Access Token, realiza un POST rápido a tu feed (con contenido de prueba) desde el Explorer:\n   - Método: `POST`\n   - Endpoint: `/{page-id}/feed`\n   - Parámetro: `message=Test API post`\n   - Incluye el Page Access Token en el panel derecho.  \n   Si la llamada es correcta, el estado de “Prueba en curso” cambiará a “Completado”. Puedes borrar la publicación manualmente desde Facebook después de la prueba si quieres.\ndame lo necesario con los datos que me ha devuelto me/accounts :\n{\n  \"data\": [\n    {\n      \"access_token\": \"EAAXWEbgy8BwBP7FrZBFaLRZBTZBtLILbTol8n1QOHGXqJjtTeeo50JSmIRGRPbr4tbQ2xy2STTlLFx2oR7ajwWH0eKiahsi42uzZBxcQbMRYMZAR1CwyrLMq1CZCUWpKxnVlQHNiRZBoJgzHkD1ZC0NaRCmvAzZAgd8nVuTHrOEqG7rW9FayAAGCF6AEPjesAAtrEAc6gjxbYhNrLHokOaV6NlGp3JY00hR97651if7vrRfsZD\",\n      \"category\": \"Animales y mascotas\",\n      \"category_list\": [\n        {\n          \"id\": \"2892578344221969\",\n          \"name\": \"Animales y mascotas\"\n        }\n      ],\n      \"name\": \"buscar mascotas desaparecidas\",\n      \"id\": \"905076672682933\",\n      \"tasks\": [\n        \"MODERATE\",\n        \"MESSAGING\",\n        \"ANALYZE\",\n        \"ADVERTISE\",\n        \"CREATE_CONTENT\",\n        \"MANAGE\"\n      ]\n    }\n  ],\n  \"paging\": {\n    \"cursors\": {\n      \"before\": \"QVFIU3NBVDRxLUpWQkhVaHJMQlZAwZAUlHZAkl6Wm43SWo1M1RCQUFZANy02am1KQ2ZAUU3YwbXlyN3BsNk9zUFBTdkRfcGwzb2JfUk92dWJyQXdmcnFkZAEN3V253\",\n      \"after\": \"QVFIU3NBVDRxLUpWQkhVaHJMQlZAwZAUlHZAkl6Wm43SWo1M1RCQUFZANy02am1KQ2ZAUU3YwbXlyN3BsNk9zUFBTdkRfcGwzb2JfUk92dWJyQXdmcnFkZAEN3V253\"\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Perfecto, ya tienes toda la información que necesitabas en la respuesta de `/me/accounts`. Concretamente:\n\n- **Page ID**: `905076672682933`\n- **Page Access Token**: el valor largo que empieza por `EAAXWEbgy8BwBP...`\n\nAhora vamos a usar ese token para publicar un post de prueba desde el propio **Graph API Explorer** (así completas la “llamada de prueba” que Facebook te pide). Sigue estos pasos:\n\n---\n\n## Publicar un post desde Graph API Explorer\n\n1. **Abre el Explorer**  \n   Ve a <https://developers.facebook.com/tools/explorer>.\n\n2. **Selecciona tu App**  \n   Arriba a la derecha, en “Meta App”, elige la app con la que estás trabajando.\n\n3. **Elige método y endpoint**\n   - A la izquierda del campo de texto, cambia el método a **POST**.\n   - En el campo del endpoint escribe:\n     ```\n     905076672682933/feed\n     ```\n     (Ese es tu Page ID seguido de `/feed`.)\n\n4. **Añade los parámetros**\n   - Haz clic en “Add a Parameter”.\n   - En **Key** escribe `message`.\n   - En **Value** pon algo de prueba, por ejemplo: `Mensaje de prueba desde Graph API Explorer`.\n\n5. **Introduce el Page Access Token**\n   - En la esquina derecha verás el campo **Access Token**.  \n   - Pega ahí el token de página completo que obtuviste (`EAAX...`).\n\n6. **Ejecuta la llamada**\n   - Pulsa el botón **Submit** (en azul).\n   - Si todo va bien, verás una respuesta con un `id` similar a `905076672682933_1234567890`. Ese es el ID del post recién creado.\n\n7. **Verifica y elimina si quieres**\n   - Ve a tu página de Facebook y comprueba que aparece el post.\n   - Si solo era una prueba, puedes borrarlo manualmente desde la página (clic en los tres puntos del post → “Eliminar”).\n\n8. **Comprueba el permiso**\n   - Vuelve al panel de la app en <https://developers.facebook.com/apps/>.\n   - En **App Review → Permissions and Features** deberías ver `pages_manage_posts` marcado como “Completado” (sin el indicador de “0 de 1 llamadas de prueba”).\n\n---\n\nCon esto, ya tienes confirmada la capacidad de publicar en el feed. A partir de ahora puedes repetir la misma llamada desde tu propio código (Python o lo que prefieras), reutilizando el mismo Page Access Token (ten en cuenta su caducidad: los tokens generados en el Explorer duran alrededor de una hora; para producción conviene cambiarlo por uno de larga duración).\n\nCuando quieras, te doy el snippet en Python para publicar desde tu aplicación usando `requests`."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "no me funciona, tengo en la linea de arriba :\nFavorites\n\nPOST\n← graph.\n.facebook.com/\n\nv24.0\n/\n\nEnviar\n\nen el desplegable de la izda : \n\nParams\nJSON\nEliminar\n905076672682933\nMensaje de prueba desde Graph API Explore\n+ Agregar otro parámetro\n\nen el cuadro de la derecha : \nToken de acceso\nEAAXWEbgy8BwBP7FrZBFaLRZBTZBtLILbTol8n1QOHGXqJjtTeeo50JSmIRGRPbr4tbQ2xy2STTlLFx2oR7ajwWH0eKiahsi42uzZBxcQbMRYMZAR1CwyrLMq1CZCUWpKxnVlQHNiRZBoJgzHkD1ZC0NaRCmvAzZAgd8nVuTHrOEqG7rW9FayAAGCF6AEPjesAAtrEAc6gjxbYhNrLHokOaV6NlGp3JY00hR97651if7vrRfsZD\n\nCopy Token\n\nGenerate Access Token\nApp de Meta\n\napp mascotas desaparecidas\nUsuario o página\n\nToken del usuario\nPermisos \nReset\n\nClear\npages_show_list\npages_manage_posts\nAgregar un permiso\n\n2 opciones seleccionadas\n\nal pulsar enviar , me da el error : \n{\n  \"error\": {\n    \"message\": \"Unsupported post request. Please read the Graph API documentation at https://developers.facebook.com/docs/graph-api\",\n    \"type\": \"GraphMethodException\",\n    \"code\": 100,\n    \"error_subcode\": 33,\n    \"fbtrace_id\": \"AGT-rxkAocMjRLrvS8qXAGN\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ese error “Unsupported post request” aparece porque el Explorer está recibiendo la URL o los parámetros mal formados. En tu captura se ve que el Page ID (`905076672682933`) se quedó como nombre de un parámetro, en lugar de formar parte del endpoint. Déjalo así:\n\n1. **Limpia la petición actual**  \n   Haz clic en “Clear” (esquina superior derecha) para reiniciar la llamada.\n\n2. **Elige método y endpoint correctos**  \n   - Selecciona el método **POST** (a la izquierda del campo de texto).  \n   - En el campo que empieza por `https://graph.facebook.com/v24.0/` escribe exactamente:  \n     ```\n     905076672682933/feed\n     ```\n     (Es tu Page ID seguido de `/feed`.)\n\n3. **Añade el parámetro `message`**  \n   - Haz clic en “Add a Parameter”.  \n   - En **Key** escribe `message`.  \n   - En **Value** escribe el texto de prueba, por ejemplo: `Mensaje de prueba desde Graph API Explorer`.\n\n4. **Pega el Page Access Token**  \n   - En “Access Token” (panel de la derecha) pega el token que obtuviste de `/me/accounts`.\n\n5. **Envía la petición**  \n   - Pulsa **Submit**.  \n   - Si todo está bien, la respuesta será algo como:\n     ```json\n     {\n       \"id\": \"905076672682933_1234567890123456\"\n     }\n     ```\n     Ese es el ID del post creado.\n\n6. **Comprueba en Facebook**  \n   - Entra a la página y verás la publicación de prueba (la puedes eliminar si no la necesitas).\n\nCon esto completarás la llamada de prueba que Facebook exige y, desde ahora, podrás repetir el mismo POST desde tu código Python."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "error :\n{\n  \"error\": {\n    \"message\": \"(#283) Requires pages_read_engagement permission to manage the object\",\n    \"type\": \"OAuthException\",\n    \"code\": 283,\n    \"fbtrace_id\": \"A3yVpvsjy1qlzHfRiCM9U5U\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "El error `(#283) Requires pages_read_engagement permission…` significa que, para publicar en el feed con la versión actual de la API, Facebook exige que el token tenga también el permiso **`pages_read_engagement`**. Aunque al principio intentamos evitarlo, ya vemos que es obligatorio (al menos con Graph API v24).\n\n### Qué tienes que hacer\n\n1. **Dar acceso avanzado a `pages_read_engagement`**\n   - Ve al panel de tu app → **App Review → Permissions and Features**.\n   - Busca `pages_read_engagement` y pulsa **Get Advanced Access**.\n   - Acepta las condiciones. (Para pruebas en tu propia página no hace falta pasar revisión extra: basta con que seas administrador de la app y de la página.)\n\n2. **Generar de nuevo el token de usuario con los permisos correctos**\n   - En el Graph API Explorer, selecciona tu app.\n   - Pulsa **Generate Access Token** y marca exactamente estos permisos:\n     - `pages_manage_posts`\n     - `pages_show_list`\n     - `pages_read_engagement`\n   - Acepta la ventana de permisos.\n\n3. **Obtener de nuevo el Page Access Token**\n   - Con el token de usuario recién generado, ejecuta `GET /me/accounts`.\n   - Copia el `access_token` correspondiente a tu página (es distinto del anterior).\n\n4. **Repetir el POST al feed**\n   - Método: `POST`\n   - Endpoint: `905076672682933/feed`\n   - Parámetro: `message=Mensaje de prueba desde Graph API Explorer`\n   - Token de acceso: el nuevo Page Access Token.\n   - Pulsas **Submit**. Deberías recibir un `{\"id\": \"...\"}`\n   - Verifica en la página que el post aparece (lo puedes borrar después).\n\nCon esto, Facebook marcará el permiso como “Completado” y ya puedes publicar desde tu código. Recuerda que el token que genera el Explorer expira en ~1 hora; si necesitas uno de larga duración para producción, después te explico cómo extenderlo."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "cuando selecciono page_read_engagement me slae este cuadro de aviso :\nSi agregas pages_read_engagement, otros casos de uso de esta app se verán afectados\n\nEste privilegio se encuentra en uno o varios casos de uso más en esta app. Al agregarlo, también se\nagregará en los casos de uso que figuran a continuación.\n\nX\n\nInteractuar con los clientes en Messenger from Meta\nResponde a los mensajes enviados a la página de Facebook de tu negocio. Puedes configurar\nrespuestas automáticas o dejar que responda un representante de tu equipo. Información\nsobre la plataforma de Messenger\n\nAdministrar mensajes y contenido en Instagram\nRealiza publicaciones, comparte historias, responde comentarios, contesta mensajes directos\ny mucho mas con la API de Instagram. Informacion sobre la API de Instagram\n\nCancelar\n\nAdd"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ese mensaje es normal: Meta te está avisando de que el permiso `pages_read_engagement` forma parte de otros “casos de uso” asociados a tu app (por ejemplo, Messenger o Instagram). Al activarlo, se habilita también en esos escenarios, pero no rompe nada. Si en algún momento no lo necesitas, puedes deshabilitarlo más adelante desde la misma sección.\n\nPara continuar, pulsa **“Add”**.  \nLuego repite los pasos:\n\n1. Genera un token de usuario marcando ahora `pages_manage_posts`, `pages_show_list` y `pages_read_engagement`.\n2. Vuelve a hacer `GET /me/accounts` y copia el nuevo Page Access Token.\n3. Lanza el POST a `/{page-id}/feed` con el parámetro `message=...`.\n\nCon eso el error (#283) desaparecerá y podrás publicar desde tu página sin problemas."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "ahora me devuelve esto :\n{\n  \"id\": \"905076672682933_122099445411129782\"\n}\nque hago?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "¡Listo! Ese resultado indica que la publicación se creó correctamente.  \nEl `id` que ves (`905076672682933_122099445411129782`) es el identificador único del post recién publicado.\n\n### Qué puedes hacer ahora\n\n1. **Verificar en la página**  \n   Entra en Facebook → tu página “buscar mascotas desaparecidas” y deberías ver el mensaje público. Si era solo un test, puedes eliminarlo desde los tres puntitos del post → “Eliminar”.\n\n2. **Comprobar el permiso**  \n   Vuelve al panel de la app → **App Review → Permissions and Features** y verás `pages_manage_posts` marcado como “Completado” (ya hiciste la llamada de prueba).\n\n3. **Publicar desde tu código**  \n   A partir de aquí, puedes usar el mismo Page Access Token (recuerda que el generado en el Explorer dura ~1 hora) para postear desde tu script de Python. Si necesitas que el token dure más, luego se puede intercambiar por uno de larga duración (te explico cómo cuando quieras).\n\nEn el siguiente paso te puedo ayudar a montar la función en Python que llame a `POST /{page-id}/feed` (e incluso adjuntar fotos si lo necesitas). Solo dime."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "el punto 1 ok, el punto 2 :falso, me da :\nAdministrar todos los aspectos de tu página\n\nPrueba en curso\n\nA\n\npages_manage_metadata\n\nCompletado\n\npages_read_engagement\n\n.\n\nO de 1 llamadas de prueba a la API necesarias\n\npublic_profile\n\n.\n\nO llamadas de prueba a la API\n\npages_manage_posts\n\n.\n\nO de 1 llamadas de prueba a la API necesarias\n\npages_show_list\n\nCompletado\n\nbusiness_management\n\nO de 1 llamadas de prueba a la API necesarias"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Esa etiqueta de **“Prueba en curso – 0 de 1 llamadas de prueba necesarias”** pertenece a los “casos de uso” que Meta muestra en el panel, pero no significa que el permiso no esté activo. De hecho:\n\n- Acabas de publicar un post con éxito (`POST /{page-id}/feed` te devolvió el ID), lo cual solo es posible si `pages_manage_posts` y `pages_read_engagement` están funcionando.\n- En la práctica, ya tienes el acceso completo a esos permisos. Facebook simplemente deja marcado ese aviso como “pendiente” en el tablero porque no detectó ningún test automático en el contexto de ese “caso de uso”.\n\nSi quieres, puedes dejarlo tal cual (no afecta a tus llamadas reales).  \nSi prefieres quitar el mensaje, tienes dos opciones:\n\n1. **Hacer la llamada de prueba desde el mismo caso de uso**  \n   - En el panel, haz clic en el caso de uso “Interactuar con los clientes en Messenger” o “Administrar mensajes y contenido en Instagram” (los que aparecen en el aviso).  \n   - Dentro verás una opción para “Realizar una llamada de prueba” o “Marcar como completada”.  \n   - Sigue las instrucciones (es básicamente la misma llamada que ya hiciste).\n\n2. **Ignorarlo**  \n   - Mientras estés en modo *Development* y uses la app con tus propios activos, no es necesario completar esa marca.  \n   - El permiso ya está disponible (la publicación lo demuestra).\n\nEn resumen: el aviso “Prueba en curso” es puramente informativo; puedes seguir adelante con tu desarrollo. Ahora que tienes el Page Access Token, ya podemos montar la función en Python para publicar desde tu código (texto y fotos). Cuando quieras te paso el snippet."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "vale, ahora quieo hacer esto :\n3. **Publicar desde tu código**  \n   A partir de aquí, puedes usar el mismo Page Access Token (recuerda que el generado en el Explorer dura ~1 hora) para postear desde tu script de Python. Si necesitas que el token dure más, luego se puede intercambiar por uno de larga duración (te explico cómo cuando quieras).\n\nEn el siguiente paso te puedo ayudar a montar la función en Python que llame a `POST /{page-id}/feed` (e incluso adjuntar fotos si lo necesitas). Solo dime."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Aquí tienes un módulo listo para publicar en el muro de tu página de Facebook con el mismo formato de texto y fotos que utilizas en el correo/Messenger. Guarda este archivo, por ejemplo, como `utils/publicar_fb.py` (en la misma carpeta donde están `envia_mail.py` y `envia_fb.py`) y recuerda definir las variables de entorno correspondientes en tu `.bat`:\n\n- `FACEBOOK_PAGE_ID` (o `PAGE_ID`) → `905076672682933`\n- `PAGE_ACCESS_TOKEN` → el token de página que obtuviste (ten en cuenta que el generado en Graph Explorer caduca en ~1 hora; más abajo comento cómo alargarlo).\n\n```python\n\"\"\"\nPublicación de mensajes y fotos en el feed de la página de Facebook.\n\nRequiere como mínimo las variables de entorno:\n    - PAGE_ACCESS_TOKEN (token de la página con permisos pages_manage_posts,\n      pages_show_list y pages_read_engagement).\n    - FACEBOOK_PAGE_ID o PAGE_ID (ID numérico de la página).\n\"\"\"\n\nimport json\nimport os\nfrom pathlib import Path\nfrom typing import Iterable, Mapping, Optional, Sequence, Tuple, Union\n\nimport requests\n\nPAGE_ACCESS_TOKEN = os.getenv(\"PAGE_ACCESS_TOKEN\")\nif not PAGE_ACCESS_TOKEN:\n    raise RuntimeError(\"Falta la variable de entorno PAGE_ACCESS_TOKEN\")\n\nPAGE_ID = os.getenv(\"FACEBOOK_PAGE_ID\") or os.getenv(\"PAGE_ID\")\nif not PAGE_ID:\n    raise RuntimeError(\"Falta la variable de entorno FACEBOOK_PAGE_ID o PAGE_ID\")\n\nGRAPH_API_VERSION = \"v18.0\"\nGRAPH_API_BASE = f\"https://graph.facebook.com/{GRAPH_API_VERSION}\"\nGRAPH_API_FEED = f\"{GRAPH_API_BASE}/{PAGE_ID}/feed\"\nGRAPH_API_PHOTOS = f\"{GRAPH_API_BASE}/{PAGE_ID}/photos\"\n\nMAX_TEXT_LENGTH = 63_000  # límite aproximado admitido por el feed\n\nDatosType = Union[Mapping[str, object], Sequence[Tuple[str, object]]]\n\n\ndef formatear_valor(valor) -> str:\n    \"\"\"\n    Convierte un valor al formato de texto que usamos en los correos/mensajes.\n    - valor: objeto de cualquier tipo (datetime, date, None, etc.).\n    - return: cadena legible; fechas formateadas o \"N/D\" si está vacío.\n    \"\"\"\n    from datetime import date, datetime\n\n    if valor is None or valor == \"\":\n        return \"N/D\"\n    if isinstance(valor, datetime):\n        return valor.strftime(\"%d/%m/%Y %H:%M\")\n    if isinstance(valor, date):\n        return valor.strftime(\"%d/%m/%Y\")\n    return str(valor)\n\n\ndef extraer_ruta(objeto) -> Optional[str]:\n    \"\"\"\n    Obtiene una ruta absoluta de un objeto con atributos comunes.\n    - objeto: puede tener atributos ruta, path, filepath o file_path.\n    - return: ruta en texto o None si no existe.\n    \"\"\"\n    return (\n        getattr(objeto, \"ruta\", None)\n        or getattr(objeto, \"path\", None)\n        or getattr(objeto, \"filepath\", None)\n        or getattr(objeto, \"file_path\", None)\n    )\n\n\ndef construir_texto_post(subject: str, datos: DatosType) -> str:\n    \"\"\"\n    Genera el cuerpo del post con el mismo formato del correo/messenger.\n    - subject: título o asunto.\n    - datos: dict o secuencia (campo, valor).\n    - return: cadena con formato final.\n    \"\"\"\n    if isinstance(datos, Mapping):\n        items = list(datos.items())\n    else:\n        items = list(datos)\n\n    cuerpo = [subject, \"\", \"Datos de la mascota:\", \"--------------------\"]\n    for clave, valor in items:\n        cuerpo.append(f\"{clave}: {formatear_valor(valor)}\")\n    cuerpo.append(\"\")\n    cuerpo.append(\"Este mensaje se generó automáticamente desde Web Mascotas.\")\n\n    texto = \"\\n\".join(cuerpo)\n    if len(texto) > MAX_TEXT_LENGTH:\n        raise ValueError(\n            f\"El texto resultante supera el límite permitido ({MAX_TEXT_LENGTH} caracteres).\"\n        )\n    return texto\n\n\ndef _post_to_graph(url: str, payload: dict | None = None, files: dict | None = None):\n    \"\"\"\n    Envía una petición POST al Graph API con el Page Access Token.\n    - url: endpoint absoluto.\n    - payload: cuerpo de la petición (json o form-data).\n    - files: diccionario de archivos (para subidas multipart) o None.\n    - return: respuesta decodificada como dict.\n    \"\"\"\n    params = {\"access_token\": PAGE_ACCESS_TOKEN}\n    response = requests.post(\n        url,\n        params=params,\n        json=payload if files is None else None,\n        data=payload if files is not None else None,\n        files=files,\n        timeout=15,\n    )\n    response.raise_for_status()\n    return response.json()\n\n\ndef _upload_photo_url(image_url: str, published: bool = False) -> str:\n    \"\"\"\n    Sube una foto al álbum de la página usando una URL pública.\n    - image_url: URL accesible de la imagen.\n    - published: False para reutilizarla después en un post.\n    - return: media_fbid asignado por Facebook.\n    \"\"\"\n    payload = {\"url\": image_url, \"published\": json.dumps(published)}\n    data = _post_to_graph(GRAPH_API_PHOTOS, payload=payload)\n    return data[\"id\"]\n\n\ndef _upload_photo_local(file_path: str | Path, published: bool = False) -> str:\n    \"\"\"\n    Sube una imagen local al álbum de la página y devuelve su media_fbid.\n    - file_path: ruta absoluta del archivo en disco.\n    - published: False para usarla luego en el post.\n    - return: media_fbid asignado por Facebook.\n    \"\"\"\n    ruta = Path(file_path)\n    if not ruta.exists():\n        raise FileNotFoundError(f\"No se encontró el archivo: {ruta}\")\n\n    with ruta.open(\"rb\") as fb:\n        files = {\"source\": (ruta.name, fb, \"application/octet-stream\")}\n        payload = {\"published\": json.dumps(published)}\n        data = _post_to_graph(GRAPH_API_PHOTOS, payload=payload, files=files)\n    return data[\"id\"]\n\n\ndef _resolver_media_ids(fotos: Optional[Iterable[Union[str, object]]]) -> list[str]:\n    \"\"\"\n    Procesa la colección de fotos (URLs o rutas locales) y devuelve sus media IDs.\n    - fotos: iterable con URLs, rutas o objetos con atributo 'ruta'.\n    - return: lista de media_fbid obtenidos tras subirlas (sin publicarlas todavía).\n    \"\"\"\n    media_ids: list[str] = []\n    for foto in fotos or []:\n        ruta = None\n\n        if isinstance(foto, str):\n            ruta = foto\n        else:\n            ruta = extraer_ruta(foto)\n\n        if not ruta:\n            continue\n\n        ruta = str(ruta).strip()\n\n        if ruta.lower().startswith((\"http://\", \"https://\")):\n            media_ids.append(_upload_photo_url(ruta, published=False))\n        elif os.path.isfile(ruta):\n            media_ids.append(_upload_photo_local(ruta, published=False))\n        else:\n            print(f\"⚠️ Foto no encontrada o inválida: {ruta}; se omite.\")\n\n    return media_ids\n\n\ndef publish_pet_fb_post(\n    subject: str,\n    datos: DatosType,\n    fotos: Optional[Iterable[Union[str, object]]] = None,\n) -> bool:\n    \"\"\"\n    Publica en el feed de la página un mensaje con el mismo formato del correo.\n    - subject: título o encabezado del post.\n    - datos: dict o lista de pares (campo, valor).\n    - fotos: iterable con URLs o rutas/objetos (se subirán y se adjuntarán al post).\n    - return: True si la publicación se creó correctamente, False si hubo error.\n    \"\"\"\n    try:\n        mensaje = construir_texto_post(subject, datos)\n        media_ids = _resolver_media_ids(fotos)\n\n        payload = {\"message\": mensaje}\n        for idx, media_id in enumerate(media_ids):\n            payload[f\"attached_media[{idx}]\"] = json.dumps({\"media_fbid\": media_id})\n\n        _post_to_graph(GRAPH_API_FEED, payload=payload)\n        return True\n\n    except Exception as exc:  # pylint: disable=broad-except\n        print(f\"❌ Error publicando en el feed de Facebook: {exc}\")\n        return False\n```\n\n### Cómo usarlo\n\n1. Importa la función donde necesites publicar (por ejemplo, en `routes.py`, junto a `send_pet_email` y `send_pet_fb_message`):\n   ```python\n   from .utils.publicar_fb import publish_pet_fb_post\n   ```\n\n2. Después de enviar el correo y el mensaje de Messenger, llama a:\n   ```python\n   ok_post = publish_pet_fb_post(subject, datos_email, fotos_email)\n   if not ok_post:\n       current_app.logger.error(\n           \"Fallo al publicar en el feed de Facebook de la mascota %s\", mascota_id\n       )\n   ```\n   (La función ignora los `destinatarios_extra` porque no aplican a los posts públicos.)\n\n### Nota sobre el token\n\n- El `PAGE_ACCESS_TOKEN` que sacaste del Graph Explorer dura aproximadamente 1 hora.  \n- Para algo permanente, debes **intercambiar el token de usuario** por uno de larga duración (`/oauth/access_token?grant_type=fb_exchange_token...`) y luego generar un token de página a partir de ese usuario “extendido”. Cuando estés listo para eso, avísame y te explico el proceso.\n\nCon este módulo podrás automatizar la publicación en el muro de la página usando exactamente la misma información y fotos que ya envías por email/Messenger."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "vamos a este proceso :\n- Para algo permanente, debes **intercambiar el token de usuario** por uno de larga duración (`/oauth/access_token?grant_type=fb_exchange_token...`) y luego generar un token de página a partir de ese usuario “extendido”. Cuando estés listo para eso, avísame y te explico el proceso."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Perfecto, vamos paso a paso para que obtengas un **token de página de larga duración**. El objetivo es que no tengas que regenerar el token cada hora, sino disponer de uno que dure unos 60 días (y renovarlo solo cuando toque).\n\n---\n\n## Resumen del proceso\n\n1. **Generar un token de usuario de corta duración** (ya lo tienes, es el que obtuviste en el Graph API Explorer con `pages_manage_posts`, `pages_show_list`, `pages_read_engagement`).\n2. **Intercambiar ese token de usuario por uno de larga duración** (mediante `/oauth/access_token?grant_type=fb_exchange_token`).\n3. **Usar el token de usuario long-lived para obtener un Page Access Token long-lived** (`GET /me/accounts`).\n4. **Guardar ese Page Access Token** en tu `.bat` / variables de entorno.\n5. **Repetir cada ~60 días** (y cada vez que haya cambio de contraseña o revoques permisos).\n\n---\n\n## Paso 1. Token de usuario corto\n\nYa lo tienes: el token que obtuviste desde el Graph API Explorer con los permisos necesarios. Lo llamaremos `USER_TOKEN_CORTO`.\n\n> Importante: ese token debe incluir los scopes `pages_manage_posts`, `pages_show_list`, `pages_read_engagement`. Si no, los tokens resultantes no tendrán permisos para publicar.\n\n---\n\n## Paso 2. Intercambiar por token de usuario de larga duración\n\nNecesitas el **App ID** y el **App Secret** de tu aplicación (los puedes ver en *Settings → Basic*). No compartas el App Secret.\n\nHaz esta llamada (puedes usar un navegador, Postman, curl o incluso Python):\n\n```\nhttps://graph.facebook.com/v18.0/oauth/access_token\n    ?grant_type=fb_exchange_token\n    &client_id=TU_APP_ID\n    &client_secret=TU_APP_SECRET\n    &fb_exchange_token=USER_TOKEN_CORTO\n```\n\n- Todo va en una sola URL (sin saltos de línea).\n- Sustituye `TU_APP_ID`, `TU_APP_SECRET` y `USER_TOKEN_CORTO` por tus valores reales.\n\nEjemplo en Windows (PowerShell o CMD) usando `curl`:\n\n```powershell\ncurl ^\n  \"https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=123456789&client_secret=ABCDE12345&fb_exchange_token=EAABsbCS1...\" \n```\n\nRecibirás una respuesta JSON como:\n\n```json\n{\n  \"access_token\": \"EAAJZC... (token_usuario_largo)\",\n  \"token_type\": \"bearer\",\n  \"expires_in\": 5183944\n}\n```\n\nEse `access_token` es tu **token de usuario de larga duración** (dura ~60 días). Lo llamaremos `USER_TOKEN_LARGO`.\n\n> Consejo: Guarda ese token en un lugar seguro (no lo compartas). Repite esta llamada cada vez que vaya a caducar.\n\n---\n\n## Paso 3. Obtener el token de página de larga duración\n\nUsando `USER_TOKEN_LARGO`, llama a `/me/accounts`:\n\n```\nGET https://graph.facebook.com/v18.0/me/accounts?access_token=USER_TOKEN_LARGO\n```\n\nEjemplo con curl:\n\n```powershell\ncurl ^\n  \"https://graph.facebook.com/v18.0/me/accounts?access_token=EAAJZC...\"\n```\n\nLa respuesta incluirá todas las páginas que administras. Busca la entrada de “buscar mascotas desaparecidas” y copia el `access_token`. Ese es el **Page Access Token de larga duración** (durará mientras el token de usuario siga vigente; en la práctica se renueva cada vez que saques uno nuevo).\n\nEjemplo de respuesta:\n\n```json\n{\n  \"data\": [\n    {\n      \"access_token\": \"EAAD... (PAGE_TOKEN_LARGO)\",\n      \"category\": \"...\",\n      \"name\": \"buscar mascotas desaparecidas\",\n      \"id\": \"905076672682933\",\n      \"tasks\": [\"MODERATE\", \"MESSAGING\", \"ANALYZE\", \"ADVERTISE\", \"CREATE_CONTENT\", \"MANAGE\"]\n    }\n  ]\n}\n```\n\nGuarda ese `access_token` (llamémoslo `PAGE_TOKEN_LARGO`). Ese es el que usarás en tu script para publicar posts, enviar mensajes, etc.\n\n---\n\n## Paso 4. Actualiza tu `.bat` / variables de entorno\n\nEn tu fichero `.bat`, sustituye el valor actual de `PAGE_ACCESS_TOKEN` por el nuevo `PAGE_TOKEN_LARGO`.  \nOpcionalmente, guarda también el `USER_TOKEN_LARGO` para futuras renovaciones (o mantenlo en un lugar seguro).\n\nRecuerda volver a ejecutar el `.bat` antes de levantar la aplicación para que las variables se actualicen.\n\n---\n\n## Paso 5. Renovación\n\nEl token largo dura unos 60 días, pero Facebook recomienda intercambiarlo de nuevo antes de que expire (para mantener la cadena). El proceso siempre es:\n\n1. Obtener un **nuevo token de usuario corto**.\n2. Intercambiarlo con `/oauth/access_token?grant_type=fb_exchange_token` → obtienes otro `USER_TOKEN_LARGO`.\n3. Con ese nuevo `USER_TOKEN_LARGO`, llamar a `/me/accounts` y guardarte el nuevo `PAGE_TOKEN_LARGO`.\n4. Actualizar variables de entorno.\n\n> Si en algún momento cambias la contraseña de Facebook o revocas permisos desde “Settings → Business Integrations”, tendrás que repetir el proceso porque los tokens existentes quedarán inválidos.\n\n---\n\n## Opcional: automatizar el intercambio\n\nCuando quieras, te puedo dar un script Python (similar al que ya tienes para refrescar el token de página) que haga estos pasos: reciba un token corto y devuelva el largo, actualizando tu `.bat`.\n\n---\n\n### Resumen rápido\n\n1. Usa tu token corto actual (`USER_TOKEN_CORTO`).\n2. Llama a:\n   ```\n   GET https://graph.facebook.com/v18.0/oauth/access_token\n       ?grant_type=fb_exchange_token\n       &client_id=APP_ID\n       &client_secret=APP_SECRET\n       &fb_exchange_token=USER_TOKEN_CORTO\n   ```\n   → obtienes `USER_TOKEN_LARGO`.\n3. Llama a:\n   ```\n   GET https://graph.facebook.com/v18.0/me/accounts?access_token=USER_TOKEN_LARGO\n   ```\n   → el `access_token` de tu página es tu `PAGE_TOKEN_LARGO`.\n4. Actualiza `PAGE_ACCESS_TOKEN` en tu `.bat` y listo.\n\nSi necesitas ver un ejemplo completo con `requests` en Python, me dices y te lo preparo."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "me responde por ejemplo :\nMe responde :\n{\"access_token\":\"EAAXWEbgy8BwBP9lFkMxZAQUhbTNBO5T8y5ekWDJSDIE0z6AJPk005K7uelQapFe2yLLZCdgoVqCzRRKWwfZCnkGZB50QkhsvIgzROZCWRyloYDtK3bMjxxcQh2t6xrZBDAGX1XRUWBeq2bP3TtZAcQSKjz8owqmu06He6c6Sz6BIZAg4x8MZC2XpDmZACrzbUUqzKXzpQ0\",\"token_type\":\"bearer\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Perfecto, esa respuesta confirma que ya tienes el **token de usuario extendido** (`USER_TOKEN_LARGO`). Ahora solo queda usarlo para obtener el **Page Access Token** de larga duración y actualizar tus variables.\n\n---\n\n### Paso 3: obtener el token de página\n\nCon el token que acabas de recibir (`EAAXWEbgy8B...`), ejecuta:\n\n```\nGET https://graph.facebook.com/v18.0/me/accounts?access_token=EAAXWEbgy8B...\n```\n\nPuedes hacerlo con un navegador, `curl`, Postman o un pequeño script. El resultado será algo como:\n\n```json\n{\n  \"data\": [\n    {\n      \"access_token\": \"EAADw... (TOKEN_PAGINA_LARGO)\",\n      \"name\": \"buscar mascotas desaparecidas\",\n      \"id\": \"905076672682933\",\n      ...\n    }\n  ]\n}\n```\n\nEse `access_token` es el **Page Access Token de larga duración**. Cópialo y guárdalo como `PAGE_ACCESS_TOKEN`.\n\n---\n\n### Paso 4: actualiza tu `.bat`\n\n1. Abre el fichero `.bat` donde defines las variables de entorno.\n2. Sustituye el valor actual de `PAGE_ACCESS_TOKEN` por el nuevo token de página largo.\n3. (Opcional) guarda también el `USER_TOKEN_LARGO` en un lugar seguro para renovarlo más adelante.\n4. Vuelve a ejecutar el `.bat` antes de lanzar tu aplicación, para que las variables se refresquen.\n\n---\n\n### Paso 5: renovación\n\n- Este procedimiento debes repetirlo aproximadamente cada **60 días** (antes de que caduque).\n- Si cambias contraseña de Facebook o revocas permisos, tendrás que generar tokens nuevos desde cero.\n\n---\n\nCon eso tendrás un Page Access Token que te permitirá publicar en el feed y enviar mensajes sin tener que regenerarlo cada hora. Si necesitas automatizar el intercambio (por ejemplo, con un script `refresh_fb_page_token.py` similar al que ya usas), avísame y te preparo el ejemplo."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "como lo pruebo con curl , no me acuerdo Puedes hacerlo con un navegador, `curl`, Postman o un pequeño script. El resultado será algo como:"
+        }
+      ]
+    }
+  ],
+  "memory_state": {
+    "summary": "- Objetivo: Automatizar y gestionar el envío de mensajes a Facebook Messenger para la página “buscar mascotas desaparecidas”, incluyendo texto multilinea e imágenes, usando tokens almacenados en variables de entorno configuradas mediante un fichero `.bat`.\n- Estado actual: Variables de entorno clave definidas (`FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_USER_LONG_TOKEN`, `FACEBOOK_PAGE_ID`, `PAGE_ACCESS_TOKEN`, `PAGE_ACCESS_TOKEN_LAST_REFRESH`, `PSID_DESTINO`). Script `refresh_fb_page_token.py` disponible para renovar el Page Access Token y actualizar el `.bat`. Script de envío Python adaptado para leer variables de entorno y soportar texto multilinea, imágenes por URL y adjuntos locales.\n- Próximos pasos pendientes: Ejecutar `refresh_fb_page_token.py` cuando sea necesario, correr el `.bat` tras cada actualización de tokens, y mantener manualmente `FACEBOOK_USER_LONG_TOKEN` antes de su caducidad (~60 días).\n- Información relevante: Script Flask `send_pet_email` usa configuración SMTP de la app para enviar correos sobre mascotas perdidas, incluyendo datos formateados y adjuntos opcionales.",
+    "last_index": 0
+  }
+}

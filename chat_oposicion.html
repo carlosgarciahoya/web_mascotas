@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>💬 CHAT_TITLE</title>
+<style>
+:root {
+  --bg:#f3f4f6; --panel:#ffffff; --muted:#556073; 
+  --accent:#0ea5e9; --msg-user:#0369a1; --msg-bot:#0f1724;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:Inter,Segoe UI,Roboto,Arial;
+  background:var(--bg);
+  color:var(--msg-bot);
+  display:flex;
+  justify-content:center;
+}
+.container{
+  width:100%;
+  max-width:900px;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:var(--panel);
+  box-shadow:0 0 12px rgba(0,0,0,0.1);
+}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--panel);}
+h1{font-size:18px;margin:0;}
+.controls{display:flex;gap:8px;align-items:center;}
+select{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:var(--panel);}
+button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:white;cursor:pointer;}
+#chat{flex:1;overflow:auto;padding:16px;background:var(--panel);}
+.msg{
+  max-width:75%;
+  padding:10px;
+  border-radius:10px;
+  margin:8px 0;
+  line-height:1.5;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+  word-break:break-word;
+}
+.msg pre {
+  margin:0;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+  word-break:break-word;
+}
+.msg.user{margin-left:auto;background:linear-gradient(90deg,var(--msg-user),rgba(7,89,133,0.9));color:white;border-bottom-right-radius:2px;}
+.msg.bot{margin-right:auto;background:rgba(0,0,0,0.03);color:var(--msg-bot);border-bottom-left-radius:2px;}
+.msg.system{margin:0 auto;background:rgba(253,224,71,0.1);color:#facc15;border:1px dashed #facc15;}
+.meta{font-size:12px;color:var(--muted);margin-top:6px;}
+footer{display:flex;gap:8px;margin-top:12px;padding:12px;background:var(--panel);}
+textarea{
+  flex:1;min-height:56px;padding:10px;
+  border-radius:8px;border:1px solid rgba(0,0,0,0.04);
+  resize:none;background:var(--panel);
+}
+.btn-ghost{background:transparent;border:1px solid rgba(0,0,0,0.1);color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div>
+    <h1>💬 CHAT_TITLE</h1>
+    <div class="small">Usando proxy Flask en puerto 5050</div>
+  </div>
+  <div class="controls">
+    <label for="model">Modelo:</label>
+    <select id="model">
+      <option value="gpt-5.1-codex" selected>gpt-5.1-codex</option>
+      <option value="gpt-5" selected>gpt-5</option>
+      <option value="gpt-5-mini">gpt-5-mini</option>
+      <option value="gpt-4.1">gpt-4.1</option>
+      <option value="gpt-4o">gpt-4o</option>
+    </select>
+  </div>
+</header>
+
+<main style="flex:1;display:flex;flex-direction:column;">
+  <div id="chat"></div>
+  <footer>
+    <textarea id="input" placeholder="Escribe tu mensaje... (Shift+Enter para salto de línea)"></textarea>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button id="send">Enviar</button>
+      <button id="import" class="btn-ghost">Importar</button>
+      <button id="export" class="btn-ghost">Exportar</button>
+      <button id="clear" class="btn-ghost">Borrar</button>
+    </div>
+  </footer>
+</main>
+</div>
+
+<script>
+const $ = id=>document.getElementById(id);
+const API_PROXY='http://localhost:5050';
+
+// === Título dinámico desde servidor ===
+const CHAT_TITLE = "__CHAT_TITLE__";
+const SAN_TITLE = CHAT_TITLE.replace(/\s+/g,'_').replace(/[💬]/g,'chat');
+document.title = CHAT_TITLE;
+document.querySelector("h1").textContent = CHAT_TITLE;
+
+// === Claves únicas por chat ===
+const LS_KEY = 'chat_local_history_v1_' + SAN_TITLE;
+const LS_MODEL = 'chat_local_model_v1_' + SAN_TITLE;
+
+const chatEl=$('chat'),inputEl=$('input'),modelEl=$('model');
+const savedModel=localStorage.getItem(LS_MODEL);
+if(savedModel) modelEl.value=savedModel;
+
+// === Carga y guardado local ===
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]"); }catch{ return []; } }
+function saveHistory(h){ localStorage.setItem(LS_KEY,JSON.stringify(h)); }
+
+// === Renderizado (SEGURO, sin perder < >) ===
+function render(){
+  chatEl.innerHTML='';
+  for(const m of loadHistory()){
+    const d=document.createElement('div');
+    d.className = 'msg ' + (m.role==='user' ? 'user' : (m.role==='system' ? 'system' : 'bot'));
+
+    // contenido principal
+    const pre = document.createElement('pre');
+    pre.textContent = m.content;  // <-- aquí está la clave
+    d.appendChild(pre);
+
+    // fecha / metadatos
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = m.displayAt || '';
+    d.appendChild(meta);
+
+    chatEl.appendChild(d);
+  }
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+// === Añadir mensaje ===
+function addToHistory(role,content){
+  const h=loadHistory();
+  h.push({role,content,displayAt:new Date().toLocaleString()});
+  saveHistory(h); render();
+}
+
+// === Envío de mensaje ===
+modelEl.addEventListener('change',()=>localStorage.setItem(LS_MODEL,modelEl.value));
+$('send').addEventListener('click',sendMessage);
+inputEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } });
+
+async function sendMessage(){
+  const text=inputEl.value.trim(); if(!text) return;
+  inputEl.value=''; addToHistory('user',text);
+  const typing=document.createElement('div'); typing.className='msg bot'; typing.textContent='⏳ Escribiendo...'; chatEl.appendChild(typing);
+  try{
+    const r=await fetch(`${API_PROXY}/api/chat`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:modelEl.value,messages:loadHistory()})
+    });
+    const j=await r.json(); typing.remove();
+    const ans=j.choices?.[0]?.message?.content||'[sin respuesta]';
+    addToHistory('assistant',ans);
+  }catch(err){ typing.remove(); addToHistory('assistant','Error: '+err.message); }
+}
+
+// === Exportar al servidor ===
+$('export').addEventListener('click',()=>{
+  const hist = loadHistory();
+  if(hist.length===0) return alert('No hay nada que exportar.');
+  const payload = {
+    data: JSON.stringify(hist,null,2),
+    filename: `${SAN_TITLE}_manual_export_${new Date().toISOString().replace(/[:.]/g,'-')}.json`
+  };
+  navigator.sendBeacon(`${API_PROXY}/api/backup`, new Blob([JSON.stringify(payload)], {type:'application/json'}));
+  alert('✅ Conversación exportada al servidor.');
+});
+
+// === Importar ===
+$('import').addEventListener('click',()=>{
+  const input=document.createElement('input'); input.type='file'; input.accept='.json,application/json';
+  input.onchange=e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const data=JSON.parse(reader.result);
+        if(Array.isArray(data)){ saveHistory(data); render(); alert('✅ Conversación importada'); }
+        else alert('Formato incorrecto');
+      }catch{alert('Error al leer el archivo');}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+});
+
+// === Borrar con backup automático ===
+$('clear').addEventListener('click',()=>{
+  const hist=loadHistory();
+  if(hist.length>0){
+    navigator.sendBeacon(`${API_PROXY}/api/backup`, new Blob([JSON.stringify({
+      data:JSON.stringify(hist,null,2),
+      filename:`${SAN_TITLE}_before_clear_${new Date().toISOString().replace(/[:.]/g,'-')}.json`
+    })],{type:'application/json'}));
+  }
+  localStorage.removeItem(LS_KEY); render();
+});
+
+// === Guardado automático al cerrar ===
+window.addEventListener("beforeunload", function () {
+  const hist = loadHistory();
+  if (hist.length > 0) {
+    const filename = `${SAN_TITLE}_chat_auto_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+    const payload = JSON.stringify({
+      filename: filename,
+      data: JSON.stringify(hist, null, 2)
+    });
+    navigator.sendBeacon(`${API_PROXY}/api/backup`, payload);
+    console.log("💾 Guardado automático:", filename);
+  }
+  fetch(`${API_PROXY}/shutdown`, {method:'POST'}).catch(()=>{});
+});
+
+render();
+</script>
+</body>
+</html>
