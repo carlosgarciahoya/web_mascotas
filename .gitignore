@@ -1,0 +1,5 @@
+.venv/
+.venv_aux/
+__pycache__/
+~$*.docx
+web/static/fotos/
