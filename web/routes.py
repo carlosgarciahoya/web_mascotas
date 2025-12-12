@@ -337,7 +337,7 @@ def _comparar_imagenes_openai(prompt: str, data_urls: List[str]) -> str:
     for data_url in data_urls:
         mensajes.append({"type": "image_url", "image_url": {"url": data_url}})
     respuesta = client.chat.completions.create(
-        model="gpt-5",
+        model="gpt-5.2",
         messages=[{"role": "user", "content": mensajes}]
     )
     return respuesta.choices[0].message.content
