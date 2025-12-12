@@ -9,3 +9,4 @@ guardar_claves_openai.bat
 __pycache__/
 *.pyc
 cloudflared.exe
+variables_entorno.env
