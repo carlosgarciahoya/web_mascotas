@@ -4,39 +4,170 @@
     <meta charset="UTF-8">
     <title>Web Mascotas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        header { padding: 8px 20px 4px; }
-        header h1 { text-align: center; margin: 6px 0 2px 0; }
-        main { text-align: center; padding: 8px 20px 28px; }
-        main p { font-size: 1.2rem; margin-bottom: 22px; color: #333; }
-
-        .menu-link {
-            display: block;
-            font-size: 1.15rem;
-            margin: 10px auto;
-            width: max-content;
-            text-decoration: none;
-            color: white;
-            background-color: #4CAF50;
-            padding: 10px 18px;
-            border-radius: 8px;
-            transition: background 0.25s;
+        :root {
+            --primary: #37b24d;
+            --primary-dark: #2f9e44;
+            --bg: #f7f9fb;
+            --text: #1f2933;
+            --muted: #6b7280;
+            --card-bg: #ffffff;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --radius: 12px;
         }
-        .menu-link:first-of-type { margin-top: 4px; }
-        .menu-link:hover { background-color: #45a049; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        header {
+            padding: 16px 24px 6px;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.6rem;
+        }
+        /* Hero compacto con imagen pequeña a la derecha */
+        .hero {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: linear-gradient(135deg, #e7f6ee 0%, #c4ead2 100%);
+            border-radius: 18px;
+            margin: 0 auto 18px;
+            padding: 20px 24px;
+            max-width: 1100px;
+            box-shadow: var(--shadow);
+        }
+        .hero-content {
+            flex: 1 1 auto;
+            min-width: 260px;
+        }
+        .hero h2 { margin: 0 0 8px; font-size: 1.1rem; }
+        .hero p  { margin: 0 0 12px; color: var(--muted); font-size: 0.98rem; }
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .hero-image {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-image img {
+            width: 200px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+        @media (max-width: 700px) {
+            .hero { flex-wrap: wrap; padding: 18px 16px; }
+            .hero-image { width: 100%; justify-content: flex-start; }
+            .hero-image img { width: 120px; height: 80px; }
+        }
 
-        .flash-container { max-width: 900px; margin: 0 auto 8px auto; }
-        .flash { padding: 8px 12px; border-radius: 6px; margin: 6px auto; font-weight: 600; max-width: 900px; }
-        .flash.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
-        .flash.error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
-        .flash.warning { background:#fff3cd; color:#856404; border:1px solid #ffeeba; }
+        .btn-primary, .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(55,178,77,0.25);
+        }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-secondary {
+            background: #fff;
+            color: var(--text);
+            border: 1px solid #e3e8ef;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 
-        footer { text-align: center; margin: 24px 0 10px 0; color: #666; }
+        /* Flash */
+        .flash-container { max-width: 1100px; margin: 0 auto 10px; padding: 0 16px; }
+        .flash {
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin: 8px 0;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+        .flash.success { background:#e7f9ee; color:#1e7a3b; border-color:#c6f0d4; }
+        .flash.error { background:#fdebec; color:#a12222; border-color:#f5c6cb; }
+        .flash.warning { background:#fff6e5; color:#8d5b0a; border-color:#ffd08a; }
+
+        /* Grid de opciones */
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 16px 36px;
+        }
+        .grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+        .card-link {
+            display: block;
+            text-decoration: none;
+            background: var(--card-bg);
+            color: var(--text);
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid #ecf0f3;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .card-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 32px rgba(0,0,0,0.12);
+        }
+        .card-link .emoji {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+        .card-link h3 {
+            margin: 4px 0 6px;
+            font-size: 1.1rem;
+        }
+        .card-link p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        footer {
+            text-align: center;
+            margin: 16px 0 10px;
+            color: #8b929b;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
+
 <header>
-    <h1>Bienvenido a la Web de MASCOTAS DESAPARECIDAS 🐶🐱</h1>
+    <h1>Bienvenido a la Web de busqueda de MASCOTAS DESAPARECIDAS con IA 🐶🐱</h1>
 </header>
 
 <div class="flash-container">
@@ -50,14 +181,56 @@
 </div>
 
 <main>
-    <nav aria-label="Menú principal">
-        <a class="menu-link" href="{{ url_for('main.crear_mascota') }}?tipo_registro=desaparecida">➕ Crear nueva mascota DESAPARECIDA</a>
-        <a class="menu-link" href="{{ url_for('main.crear_mascota') }}?tipo_registro=encontrada">➕ Crear nueva mascota ENCONTRADA (vista)</a>
-        <a class="menu-link" href="{{ url_for('main.buscar_mascotas') }}">🔎 Buscar datos y fotos de mascotas desaparecidas/encontradas (vistas)</a>
-        <a class="menu-link" href="{{ url_for('main.modificar_mascotas') }}">✏️ Modificar o eliminar datos de mascotas desaparecidas/encontradas (vistas)</a>
-        <a class="menu-link" href="{{ url_for('main.comparar_mascotas_desaparecidas') }}">🤖 Comparar fotos de mascotas (restringido)</a>
-        <a class="menu-link" href="{{ url_for('main.comparar_mascotas_desaparecidas', modo='identificar_raza') }}">🧬 Identificar Razas (restringido)</a>
-    </nav>
+    <section class="hero">
+        <div class="hero-content">
+            <h2>Esta web envía mensajes AUTOMÁTICOS en Instagram, Facebook, e-mail, WhatsApp, Telegram</h2>
+            <p>Encuentra y reúne mascotas con sus familias: Publica, busca, compara fotos con IA, busca raza con IA.</p>
+            <div class="hero-actions">
+                <a class="btn-primary" href="{{ url_for('main.crear_mascota') }}?tipo_registro=desaparecida">➕ He perdido una mascota</a>
+                <a class="btn-secondary" href="{{ url_for('main.crear_mascota') }}?tipo_registro=encontrada">➕ He encontrado una mascota</a>
+                <a class="btn-secondary" href="{{ url_for('main.buscar_mascotas') }}">🔎 Buscar mascotas</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="{{ url_for('static', filename='fotos/IMG-20190307-WA0001.jpg') }}" alt="Mascota desaparecida/encontrada">
+            <!-- Placeholder si no tienes imagen aún:
+            <img src="https://placehold.co/140x90?text=Mascota" alt="Mascota desaparecida/encontrada">
+            -->
+        </div>
+    </section>
+
+    <section aria-label="Menú principal" class="grid">
+        <a class="card-link" href="{{ url_for('main.crear_mascota') }}?tipo_registro=desaparecida">
+            <div class="emoji">📌</div>
+            <h3>Crear mascota DESAPARECIDA</h3>
+            <p>Publica un aviso de pérdida con foto y datos de contacto.</p>
+        </a>
+        <a class="card-link" href="{{ url_for('main.crear_mascota') }}?tipo_registro=encontrada">
+            <div class="emoji">📍</div>
+            <h3>Crear mascota ENCONTRADA (vista)</h3>
+            <p>Registra una mascota que has encontrado para localizar al dueño.</p>
+        </a>
+        <a class="card-link" href="{{ url_for('main.buscar_mascotas') }}">
+            <div class="emoji">🔎</div>
+            <h3>Buscar mascotas desaparecidas/encontradas (vistas)</h3>
+            <p>Explora anuncios activos por zona, fecha o coincidencias.</p>
+        </a>
+        <a class="card-link" href="{{ url_for('main.modificar_mascotas') }}">
+            <div class="emoji">✏️</div>
+            <h3>Modificar o eliminar anuncios (vistas)</h3>
+            <p>Edita datos, actualiza fotos o marca como resuelto un caso.</p>
+        </a>
+        <a class="card-link" href="{{ url_for('main.comparar_mascotas_desaparecidas') }}">
+            <div class="emoji">🤖</div>
+            <h3>Comparar fotos de mascotas con IA (restringido)</h3>
+            <p>Compara las fotos de tu mascota desaparecida con las encontradas.</p>
+        </a>
+        <a class="card-link" href="{{ url_for('main.comparar_mascotas_desaparecidas', modo='identificar_raza') }}">
+            <div class="emoji">🧬</div>
+            <h3>Identificar Razas con IA (restringido)</h3>
+            <p>Analiza la foto y obtén la raza o mezcla aproximada.</p>
+        </a>
+    </section>
 </main>
 
 <footer>Web Mascotas - 2025</footer>

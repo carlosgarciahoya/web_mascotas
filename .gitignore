@@ -10,3 +10,4 @@ __pycache__/
 *.pyc
 cloudflared.exe
 variables_entorno.env
+mis_limites_openai.py
