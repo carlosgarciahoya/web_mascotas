@@ -691,6 +691,10 @@ def crear_mascota(mascota_id=None):
             return redirect(url_for("main.index"))
 
     if request.method == "POST":
+
+        print("FORM COMPLETO:", request.form.to_dict(flat=False))
+        print("FILES:", [f.filename for f in request.files.getlist('fotos')])
+
         print("[DBG CREAR] POST recibido:",
               "args.tipo_registro=", request.args.get("tipo_registro"),
               "form.tipo_registro=", request.form.get("tipo_registro"))
@@ -886,7 +890,7 @@ def crear_mascota(mascota_id=None):
                 existing_photos_by_type[foto.tipo_foto] = foto
 
         fotos = request.files.getlist("fotos")
-        tipos_foto = request.form.getlist("tipo_foto")
+        tipos_foto = request.form.getlist("fotos_tipo")  # antes ponía "tipo_foto"
         print("[DBG CREAR] files.fotos len=", len(fotos),
               "tipos_foto len=", len(tipos_foto))
         print("[DBG CREAR] tipos_foto=", tipos_foto)
