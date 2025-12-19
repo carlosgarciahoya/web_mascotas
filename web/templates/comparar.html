@@ -43,7 +43,7 @@
             {% for r in resultado %}
             <tr>
                 <td>{{ r.mascota.nombre }} ({{ r.mascota.tipo }})</td>
-                <td><img src="{{ url_for('static', filename='fotos/' + r.foto.ruta.split('fotos\\')[-1]) }}"></td>
+                <td><img src="{{ r.foto.url }}" alt="{{ r.foto.tipo_foto or '' }}"></td>
                 <td>{{ r.porcentaje }}%</td>
                 <td>{{ r.texto }}</td>
             </tr>

@@ -2,16 +2,17 @@
 Herramientas para comparar dos fotos utilizando el modelo visual de OpenAI.
 
 La función pública `comparar_fotos(path_a, path_b)` recibe rutas (absolutas o
-relativas) de las imágenes a comparar y devuelve un diccionario con el
-resultado textual y, si es posible, un porcentaje de similitud.
+relativas), data-URIs o bytes de las imágenes a comparar y devuelve un
+diccionario con el resultado textual y, si es posible, un porcentaje de similitud.
 """
 
 from __future__ import annotations
 
 import base64
+import mimetypes
 import os
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from flask import current_app
 from openai import OpenAI
@@ -26,11 +27,6 @@ def _get_client() -> OpenAI:
     Devuelve un cliente OpenAI inicializado con la API key definida en la
     configuración de Flask (`current_app.config["OPENAI_API_KEY"]`) o en la
     variable de entorno del mismo nombre.
-
-    Raises
-    ------
-    ValueError
-        Si no se encuentra la API key.
     """
     api_key = (
         current_app.config.get("OPENAI_API_KEY")
@@ -53,13 +49,6 @@ def _resolver_ruta(ruta: str) -> str:
         2. `current_app.static_folder`
         3. `current_app.instance_path`
         4. Carpeta raíz de la aplicación (`current_app.root_path`)
-
-    Raises
-    ------
-    ValueError
-        Si `ruta` está vacía.
-    FileNotFoundError
-        Si no se encuentra ningún archivo válido.
     """
     if not ruta:
         raise ValueError("Se recibió una ruta vacía o None.")
@@ -89,11 +78,6 @@ def _resolver_ruta(ruta: str) -> str:
 def _image_to_data_url(path: str) -> str:
     """
     Convierte una ruta local en un data URL (base64) listo para enviarlo a OpenAI.
-
-    Raises
-    ------
-    FileNotFoundError
-        Si el archivo no existe.
     """
     if not os.path.isfile(path):
         raise FileNotFoundError(f"No existe la imagen: {path}")
@@ -117,6 +101,28 @@ def _image_to_data_url(path: str) -> str:
     return f"data:{mime};base64,{b64}"
 
 
+def _a_data_url(item: Union[str, bytes, bytearray]) -> str:
+    """
+    Convierte la entrada a data-URI. Acepta:
+      - cadenas que ya sean data:image/...
+      - rutas de fichero existentes (absolutas o relativas)
+      - bytes/bytearray con datos de imagen (mime por defecto image/jpeg)
+    """
+    if isinstance(item, str):
+        s = item.strip()
+        if s.startswith("data:image"):
+            return s
+        ruta_abs = _resolver_ruta(s)
+        return _image_to_data_url(ruta_abs)
+
+    if isinstance(item, (bytes, bytearray)):
+        mime = "image/jpeg"
+        b64 = base64.b64encode(item).decode("utf-8")
+        return f"data:{mime};base64,{b64}"
+
+    raise ValueError(f"No se pudo procesar la imagen recibida: {item!r}")
+
+
 def _extraer_score(texto: str) -> Optional[float]:
     """
     Intenta localizar un porcentaje en el texto de respuesta (por ejemplo: '85%').
@@ -138,39 +144,24 @@ def _extraer_score(texto: str) -> Optional[float]:
 # Función pública
 # ---------------------------------------------------------------------------
 
-def comparar_fotos(path_a: str, path_b: str) -> Dict[str, object]:
+def comparar_fotos(
+    path_a: Union[str, bytes, bytearray],
+    path_b: Union[str, bytes, bytearray],
+) -> Dict[str, object]:
     """
     Compara dos imágenes y pide al modelo de OpenAI un porcentaje y explicación.
 
     Parameters
     ----------
-    path_a : str
-        Ruta (absoluta o relativa) de la primera foto.
-    path_b : str
-        Ruta (absoluta o relativa) de la segunda foto.
-
-    Returns
-    -------
-    dict
-        Estructura con las claves:
-            - ok (bool): indica si la comparación se realizó sin excepciones.
-            - mensaje (str): texto devuelto por el modelo o el error.
-            - score (float | None): porcentaje de similitud extraído si se detecta.
-            - raw (str | None): texto original por si se quiere analizar después.
-
-    Notes
-    -----
-    - La función registra cualquier excepción en el logger de Flask.
-    - Si falta la API key, lanza ValueError (para que la vista sepa que es problema de configuración).
+    path_a : str | bytes | bytearray
+        Cadena con data-URI, ruta (absoluta o relativa) o binario de la primera foto.
+    path_b : str | bytes | bytearray
+        Cadena con data-URI, ruta (absoluta o relativa) o binario de la segunda foto.
     """
-    # Normaliza rutas y prepara data URLs
-    ruta_a = _resolver_ruta(path_a)
-    ruta_b = _resolver_ruta(path_b)
+    # Prepara data URLs para ambas entradas
+    data_a = _a_data_url(path_a)
+    data_b = _a_data_url(path_b)
 
-    data_a = _image_to_data_url(ruta_a)
-    data_b = _image_to_data_url(ruta_b)
-
-    # Contenido enviado al modelo
     mensajes = [
         {
             "type": "text",
@@ -181,7 +172,6 @@ def comparar_fotos(path_a: str, path_b: str) -> Dict[str, object]:
                 '{"conclusion": "...", "porcentaje": 0-100, "explicacion": "..."} '
                 "IMPORTANTE :  asegúrate de que si concluyes que no es el mismo animal el porcentaje sea bajo "
                 "(cercano a 0), si concluyes que sí sea alto (cercano a 100) y si dudas, esté alrededor de 50."
-           
             ),
         },
         {"type": "image_url", "image_url": {"url": data_a}},
@@ -191,7 +181,7 @@ def comparar_fotos(path_a: str, path_b: str) -> Dict[str, object]:
     try:
         cliente = _get_client()
         respuesta = cliente.chat.completions.create(
-            model="gpt-5",
+            model="gpt-5.2",
             messages=[{"role": "user", "content": mensajes}],
         )
         texto = respuesta.choices[0].message.content or ""

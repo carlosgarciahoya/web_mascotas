@@ -205,7 +205,7 @@
                             <div class="foto-thumbs">
                                 {% for foto in fotos %}
                                     <div class="thumb">
-                                        <img class="js-lb" src="/{{ foto.ruta }}" alt="{{ foto.tipo_foto }}" data-cap="{{ mascota.nombre }} — {{ foto.tipo_foto }}">
+                                        <img class="js-lb" src="{{ foto.url }}" alt="{{ foto.tipo_foto }}" data-cap="{{ mascota.nombre }} — {{ foto.tipo_foto }}">                                      
                                         <div class="cap">{{ foto.tipo_foto }}</div>
                                     </div>
                                 {% endfor %}

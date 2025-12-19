@@ -122,7 +122,7 @@
                                     <div class="foto-thumbs">
                                         {% for foto in mascota.fotos %}
                                             <div class="thumb">
-                                                <img class="js-lb" src="/{{ foto.ruta }}" alt="{{ foto.tipo_foto or foto.tipo }}" data-cap="{{ mascota.nombre }} — {{ foto.tipo_foto or foto.tipo }}">
+                                                <img class="js-lb" src="{{ foto.url }}" alt="{{ foto.tipo_foto or foto.tipo }}" data-cap="{{ mascota.nombre }} — {{ foto.tipo_foto or foto.tipo }}">
                                                 <div class="cap">{{ foto.tipo_foto or foto.tipo }}</div>
                                                 <form method="POST" action="{{ url_for('main.eliminar_foto', foto_id=foto.id) }}">
                                                     <button type="submit" class="btn-buscar" style="padding:4px 8px;">Borrar</button>

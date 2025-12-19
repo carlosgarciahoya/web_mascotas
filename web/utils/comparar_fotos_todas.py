@@ -3,17 +3,19 @@ Herramientas para comparar conjuntos de fotos (hasta 5 por mascota) utilizando
 el modelo visual de OpenAI.
 
 La función pública `comparar_fotos_todas(paths_a, paths_b)` recibe listas de
-rutas (absolutas o relativas) de las imágenes a comparar y devuelve un diccionario
-con el resultado textual y, si es posible, un porcentaje de similitud.
+rutas (absolutas o relativas), data-URIs o bytes de las imágenes a comparar
+y devuelve un diccionario con el resultado textual y, si es posible, un
+porcentaje de similitud.
 """
 
 from __future__ import annotations
 
 import base64
 import json
+import mimetypes
 import os
 import re
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Union
 
 from flask import current_app
 from openai import OpenAI
@@ -36,6 +38,9 @@ def _get_client() -> OpenAI:
 
 
 def _resolver_ruta(ruta: str) -> str:
+    """
+    Resuelve una ruta de fichero (absoluta o relativa) a una ruta absoluta existente.
+    """
     if not ruta:
         raise ValueError("Se recibió una ruta vacía o None.")
 
@@ -62,6 +67,9 @@ def _resolver_ruta(ruta: str) -> str:
 
 
 def _image_to_data_url(path: str) -> str:
+    """
+    Convierte un fichero de imagen a data-URI.
+    """
     if not os.path.isfile(path):
         raise FileNotFoundError(f"No existe la imagen: {path}")
 
@@ -84,6 +92,29 @@ def _image_to_data_url(path: str) -> str:
     return f"data:{mime};base64,{b64}"
 
 
+def _a_data_url(item: Union[str, bytes, bytearray]) -> str:
+    """
+    Convierte la entrada a data-URI. Acepta:
+      - cadenas que ya sean data:image/...
+      - rutas de fichero existentes (absolutas o relativas)
+      - bytes/bytearray con datos de imagen (mime por defecto image/jpeg)
+    """
+    if isinstance(item, str):
+        s = item.strip()
+        if s.startswith("data:image"):
+            return s
+        # Si no es data-URI, tratamos como ruta
+        ruta_abs = _resolver_ruta(s)
+        return _image_to_data_url(ruta_abs)
+
+    if isinstance(item, (bytes, bytearray)):
+        mime = "image/jpeg"
+        b64 = base64.b64encode(item).decode("utf-8")
+        return f"data:{mime};base64,{b64}"
+
+    raise ValueError(f"No se pudo procesar la imagen recibida: {item!r}")
+
+
 def _extraer_score(texto: str) -> Optional[float]:
     if not texto:
         return None
@@ -96,13 +127,16 @@ def _extraer_score(texto: str) -> Optional[float]:
     return None
 
 
-def _normalizar_listado(rutas: Iterable[str], max_items: int = 5) -> List[str]:
-    rutas_limpias = [
+def _normalizar_listado(rutas: Iterable[Union[str, bytes, bytearray]], max_items: int = 5) -> List[Union[str, bytes, bytearray]]:
+    """
+    Limpia la lista de entradas, acepta str/bytes/bytearray y limita a max_items.
+    """
+    rutas_limpias: List[Union[str, bytes, bytearray]] = [
         ruta for ruta in rutas
-        if ruta and isinstance(ruta, str)
+        if ruta and isinstance(ruta, (str, bytes, bytearray))
     ]
     if not rutas_limpias:
-        raise ValueError("No se proporcionaron rutas de imágenes válidas.")
+        raise ValueError("No se proporcionaron imágenes válidas.")
     if len(rutas_limpias) > max_items:
         rutas_limpias = rutas_limpias[:max_items]
     return rutas_limpias
@@ -123,7 +157,7 @@ def _construir_contenido(
                 f"identificador «{etiqueta_b}» y pertenecen a otro animal. "
                 "Tu tarea es analizar si se trata del mismo animal o de animales "
                 "distintos. Devuelve tu respuesta en JSON con la forma:\n"
-                "Devuelve un porcentaje aproximado de parecido en funcion de tu analisis (0-100) y una breve explicación."
+                'Devuelve un porcentaje aproximado de parecido en funcion de tu analisis (0-100) y una breve explicación.'
                 '{"conclusion": "...", "porcentaje": 0-100, "explicacion": "..."} '
                 "IMPORTANTE :  asegúrate de que si concluyes que no es el mismo animal el porcentaje sea bajo "
                 "(cercano a 0), si concluyes que sí sea alto (cercano a 100) y si dudas, esté alrededor de 50."
@@ -210,24 +244,18 @@ def _parsear_respuesta(texto: str) -> Dict[str, object]:
 # ---------------------------------------------------------------------------
 
 def comparar_fotos_todas(
-    paths_a: Iterable[str],
-    paths_b: Iterable[str],
+    paths_a: Iterable[Union[str, bytes, bytearray]],
+    paths_b: Iterable[Union[str, bytes, bytearray]],
     etiqueta_a: str = "mascota-desaparecida",
     etiqueta_b: str = "mascota-encontrada",
 ) -> Dict[str, object]:
     paths_a_list = list(paths_a)
     paths_b_list = list(paths_b)
 
-    # print("[comparar_fotos_todas] paths_a recibidas:", paths_a_list)
-    # print("[comparar_fotos_todas] paths_b recibidas:", paths_b_list)
-
     try:
         rutas_a = _normalizar_listado(paths_a_list, max_items=5)
         rutas_b = _normalizar_listado(paths_b_list, max_items=5)
-        # print("[comparar_fotos_todas] rutas_a normalizadas:", rutas_a)
-        # print("[comparar_fotos_todas] rutas_b normalizadas:", rutas_b)
     except ValueError as exc:
-        # print("[comparar_fotos_todas] Error normalizando rutas:", exc)
         return {
             "ok": False,
             "mensaje": str(exc),
@@ -239,12 +267,9 @@ def comparar_fotos_todas(
         }
 
     try:
-        rutas_abs_a = [_resolver_ruta(r) for r in rutas_a]
-        rutas_abs_b = [_resolver_ruta(r) for r in rutas_b]
-        # print("[comparar_fotos_todas] rutas_a absolutas:", rutas_abs_a)
-        # print("[comparar_fotos_todas] rutas_b absolutas:", rutas_abs_b)
+        data_urls_a = [_a_data_url(x) for x in rutas_a]
+        data_urls_b = [_a_data_url(x) for x in rutas_b]
     except (ValueError, FileNotFoundError) as exc:
-        # print("[comparar_fotos_todas] Error resolviendo rutas:", exc)
         return {
             "ok": False,
             "mensaje": str(exc),
@@ -255,25 +280,20 @@ def comparar_fotos_todas(
             "num_fotos_b": 0,
         }
 
-    data_urls_a = [_image_to_data_url(r) for r in rutas_abs_a]
-    data_urls_b = [_image_to_data_url(r) for r in rutas_abs_b]
-    # print("[comparar_fotos_todas] Generadas data-urls para A:", [len(d) for d in data_urls_a])
-    # print("[comparar_fotos_todas] Generadas data-urls para B:", [len(d) for d in data_urls_b])
-
     contenido = _construir_contenido(data_urls_a, data_urls_b, etiqueta_a, etiqueta_b)
-    #print(
-    #    "[comparar_fotos_todas] Contenido a enviar a OpenAI:",
-    #    json.dumps(_sanitizar_contenido_para_log(contenido), ensure_ascii=False, indent=2),
-    #)
+    # Para depurar:
+    # current_app.logger.debug(
+    #     "[comparar_fotos_todas] Contenido a enviar a OpenAI: %s",
+    #     json.dumps(_sanitizar_contenido_para_log(contenido), ensure_ascii=False, indent=2),
+    # )
 
     try:
         cliente = _get_client()
         respuesta = cliente.chat.completions.create(
-            model="gpt-5",
+            model="gpt-5.2",
             messages=[{"role": "user", "content": contenido}],
         )
         texto = respuesta.choices[0].message.content or ""
-        # print("[comparar_fotos_todas] Respuesta bruta de OpenAI:", texto)
 
         datos = _parsear_respuesta(texto)
 
@@ -283,35 +303,24 @@ def comparar_fotos_todas(
             "score": datos["score"],
             "raw": datos["raw"],
             "json": datos.get("json"),
-            "num_fotos_a": len(rutas_abs_a),
-            "num_fotos_b": len(rutas_abs_b),
+            "num_fotos_a": len(data_urls_a),
+            "num_fotos_b": len(data_urls_b),
         }
-
-        # print(
-        #   "[comparar_fotos_todas] Resultado final:",
-        #    json.dumps(resultado, ensure_ascii=False, indent=2),
-        #)
         return resultado
 
     except Exception as exc:  # pylint: disable=broad-except
-        # print("[comparar_fotos_todas] Excepción al llamar a OpenAI:", exc)
         current_app.logger.exception(
             "Error al comparar conjuntos de imágenes %s vs %s: %s",
             rutas_a,
             rutas_b,
             exc,
         )
-        resultado_error = {
+        return {
             "ok": False,
             "mensaje": f"Error al comparar las imágenes: {exc}",
             "score": None,
             "raw": None,
             "json": None,
-            "num_fotos_a": len(rutas_abs_a),
-            "num_fotos_b": len(rutas_abs_b),
+            "num_fotos_a": len(data_urls_a),
+            "num_fotos_b": len(data_urls_b),
         }
-        # print(
-        #    "[comparar_fotos_todas] Resultado de error:",
-        #    json.dumps(resultado_error, ensure_ascii=False, indent=2),
-        #)
-        return resultado_error

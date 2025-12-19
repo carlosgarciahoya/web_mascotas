@@ -20,9 +20,9 @@ def _read_image_as_data_uri(path):
         b64 = base64.b64encode(f.read()).decode("utf-8")
     return f"data:image/{mime};base64,{b64}"
 
-def compare_images_with_gpt5(path1, path2, model="gpt-5"):
+def compare_images_with_gpt5(path1, path2, model="gpt-5.2"):
     """
-    Compara dos imágenes usando GPT-5. Devuelve un diccionario con campos interpretables.
+    Compara dos imágenes usando gpt-5.2. Devuelve un diccionario con campos interpretables.
     """
     img1 = _read_image_as_data_uri(path1)
     img2 = _read_image_as_data_uri(path2)

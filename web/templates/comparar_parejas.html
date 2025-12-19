@@ -487,7 +487,7 @@
                 <span>ID: {{ mascota_encontrada.id }}</span>
             </div>
 
-            <div la class="double-column">
+            <div class="double-column">
                 <div class="photos-block">
                     {% for tipo in orden_preferido %}
                         {% if fotos_encon_por_tipo.get(tipo) %}
@@ -734,19 +734,9 @@
             setTextoBotonBase();
         }
 
+        // Ya no hay rutas en disco: usamos la URL del endpoint /foto/<id>
         function obtenerRutaFoto(foto) {
-            if (!foto || typeof foto !== 'object') return null;
-            return (
-                foto.ruta_abs ||
-                foto.ruta_absoluta ||
-                foto.ruta_relativa ||
-                foto.ruta ||
-                foto.path ||
-                foto.filepath ||
-                foto.file_path ||
-                foto.url ||
-                null
-            );
+            return foto && typeof foto === 'object' && foto.url ? foto.url : null;
         }
 
         function obtenerEtiqueta(tipo, label) {
@@ -797,16 +787,8 @@
 
             const payload = {
                 tipo,
-                foto_desap: {
-                    id: fotoDesap.id ?? null,
-                    ruta: rutaDesap,
-                    url: fotoDesap.url ?? null,
-                },
-                foto_encon: {
-                    id: fotoEncon.id ?? null,
-                    ruta: rutaEncon,
-                    url: fotoEncon.url ?? null,
-                },
+                foto_desap: { id: fotoDesap.id ?? null, url: rutaDesap },
+                foto_encon: { id: fotoEncon.id ?? null, url: rutaEncon },
             };
 
             limpiarResultado();

@@ -56,10 +56,9 @@
                     <b>Fotos registradas:</b>
                     <div class="foto-thumbs">
                         {% for foto in mascota_desaparecida.fotos %}
-                            {% set ruta_rel = foto.ruta if foto.ruta.startswith('static/') else 'static/' ~ foto.ruta %}
                             <div class="thumb">
                                 <img class="js-lb"
-                                     src="{{ url_for('static', filename=ruta_rel.split('static/', 1)[1]) }}"
+                                     src="{{ url_for('main.ver_foto', foto_id=foto.id) }}"
                                      alt="{{ foto.tipo_foto }}"
                                      data-cap="{{ mascota_desaparecida.nombre }} — {{ foto.tipo_foto }}">
                                 <div class="cap">{{ foto.tipo_foto }}</div>
@@ -70,6 +69,7 @@
             {% else %}
                 <div class="foto-info"><i>Sin fotos registradas.</i></div>
             {% endif %}
+
         </div>
     </section>
 
@@ -113,10 +113,9 @@
                                 <b>Fotos registradas:</b>
                                 <div class="foto-thumbs">
                                     {% for foto in fotos %}
-                                        {% set ruta_rel = foto.ruta if foto.ruta.startswith('static/') else 'static/' ~ foto.ruta %}
                                         <div class="thumb">
                                             <img class="js-lb"
-                                                 src="{{ url_for('static', filename=ruta_rel.split('static/', 1)[1]) }}"
+                                                 src="{{ foto.url }}"
                                                  alt="{{ foto.tipo_foto }}"
                                                  data-cap="{{ candidata.nombre }} — {{ foto.tipo_foto }}">
                                             <div class="cap">{{ foto.tipo_foto }}</div>

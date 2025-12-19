@@ -1,4 +1,3 @@
-# routes.py
 import os
 import re
 import uuid
@@ -14,7 +13,7 @@ import mimetypes
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, jsonify, current_app,
-    send_file, abort  # <--- agrega estos dos
+    send_file, abort
 )
 from flask import has_request_context
 
@@ -25,8 +24,8 @@ from werkzeug.utils import secure_filename
 from .models import db, Mascota, FotoMascotaDesaparecida as Foto
 from .utils.envia_mail import send_pet_email
 
-# from .utils.prueba_envio_facebook import send_pet_fb_message  # <-- nuevo import
-from .utils.publicar_fb import publish_pet_fb_post  # <-- nuevo import
+# from .utils.prueba_envio_facebook import send_pet_fb_message
+from .utils.publicar_fb import publish_pet_fb_post
 
 from .utils.comparar_fotos_todas import comparar_fotos_todas
 from .utils.identificar_raza import identificar_raza
@@ -81,8 +80,6 @@ def normalizar_codigo_postal(valor: str | None) -> str:
 def validar_codigo_postal(valor: str | None) -> bool:
     return bool(CODIGO_POSTAL_REGEX.match(valor or ""))
 
-# ACTIVAR_MESSENGER = os.getenv("ACTIVAR_MESSENGER", "false").lower() == "true"
-
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def _get_static_root() -> str:
@@ -91,13 +88,11 @@ def _get_static_root() -> str:
     except RuntimeError:
         static_root = None
     elegido = static_root or STATIC_DIR
-    
     return elegido
 
 
 def _resolver_ruta_absoluta(ruta_rel: str) -> str:
     ruta_abs = os.path.join(_get_static_root(), ruta_rel.replace("/", os.sep))
-    
     return ruta_abs
 
 
@@ -146,6 +141,12 @@ def _extraer_ruta_absoluta_payload(info: dict | None) -> str | None:
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def image_bytes_to_data_url(data: bytes, mime_type: str | None = None, nombre_archivo: str | None = None) -> str:
+    if not mime_type and nombre_archivo:
+        mime_type = mimetypes.guess_type(nombre_archivo)[0]
+    mime = mime_type or "application/octet-stream"
+    b64 = base64.b64encode(data).decode("utf-8")
+    return f"data:{mime};base64,{b64}"
 
 def image_to_data_url(path):
     name = os.path.basename(path).lower()
@@ -202,7 +203,6 @@ def eliminar_archivo_relativo(ruta_rel: str | None) -> None:
     if not ruta_norm:
         return
     ruta_abs = _resolver_ruta_absoluta(ruta_norm)
-   
     try:
         if os.path.isfile(ruta_abs):
             os.remove(ruta_abs)
@@ -212,13 +212,30 @@ def eliminar_archivo_relativo(ruta_rel: str | None) -> None:
 def eliminar_foto_obj(foto: Foto | None) -> None:
     if not foto:
         return
-    eliminar_archivo_relativo(foto.ruta)
+    # Ya no borramos el archivo del sistema de ficheros, solo el registro en BD
     db.session.delete(foto)
 
+
+from flask import has_request_context, url_for, current_app  # current_app ya lo importas arriba
+
 def _foto_url(foto_id: int) -> str:
+    """
+    Devuelve la URL absoluta del endpoint de la foto.
+    - Si hay contexto de petición: usa url_for con _external=True.
+    - Si no hay contexto (tareas en segundo plano/CLI): usa EXTERNAL_BASE_URL.
+    """
     if has_request_context():
-        return url_for("main.ver_foto", foto_id=foto_id)
-    return f"/foto/{foto_id}"
+        return url_for("main.ver_foto", foto_id=foto_id, _external=True)
+
+    base = current_app.config.get("EXTERNAL_BASE_URL")
+    if base:
+        return f"{base.rstrip('/')}/foto/{foto_id}"
+
+    raise RuntimeError(
+        "No hay contexto de petición y no se definió EXTERNAL_BASE_URL; "
+        "no se puede construir la URL de la foto."
+    )
+
 
 @main.route("/foto/<int:foto_id>")
 def ver_foto(foto_id: int):
@@ -231,34 +248,19 @@ def ver_foto(foto_id: int):
             download_name=foto.nombre_archivo or None,
         )
 
-    ruta_rel = normalizar_ruta_foto(foto.ruta)
-    if ruta_rel:
-        ruta_abs = _resolver_ruta_absoluta(ruta_rel)
-        if ruta_abs and os.path.isfile(ruta_abs):
-            return send_file(
-                ruta_abs,
-                mimetype=foto.mime_type or "application/octet-stream",
-                download_name=foto.nombre_archivo or None,
-            )
-
+    # Sin datos binarios, devolvemos 404
     abort(404)
 
 def obtener_fotos_existentes(mascota: Mascota) -> List[Dict[str, str]]:
     fotos_serializadas: List[Dict[str, str]] = []
     for foto in getattr(mascota, "fotos", []):
-        ruta_rel = normalizar_ruta_foto(foto.ruta)
-        if not ruta_rel:
-            continue
-
         fotos_serializadas.append({
-                    "id": foto.id,
-                    "tipo_foto": foto.tipo_foto,
-                    "ruta": f"static/{ruta_rel}",
-                    "url": _foto_url(foto.id),
+            "id": foto.id,
+            "tipo_foto": foto.tipo_foto or "desconocido",
+            "ruta": None,               # o elimina esta línea si no la necesitas
+            "url": _foto_url(foto.id),  # endpoint /foto/<id>
         })
-
     return fotos_serializadas
-
 
 def _construir_mascotas_con_fotos(mascotas):
     resultado = []
@@ -266,16 +268,12 @@ def _construir_mascotas_con_fotos(mascotas):
         fotos = Foto.query.filter_by(mascota_id=mascota.id).all()
         fotos_info = []
         for foto in fotos:
-            ruta_relativa = normalizar_ruta_foto(foto.ruta)
-            if ruta_relativa:
-
-                 fotos_info.append({
-                    "id": foto.id,
-                    "tipo_foto": foto.tipo_foto,
-                    "ruta": f"static/{ruta_relativa}",
-                    "url": _foto_url(foto.id),
-                })
-
+            fotos_info.append({
+                "id": foto.id,
+                "tipo_foto": foto.tipo_foto or "desconocido",
+                "url": _foto_url(foto.id),
+                "ruta": None,  # si no necesitas esta clave, puedes eliminar esta línea
+            })
         resultado.append((mascota, fotos_info))
     return resultado
 
@@ -292,27 +290,16 @@ def _es_mascota_desaparecida_valida(mascota: Mascota | None) -> bool:
         return False
     return True
 
-
-def _serializar_foto(foto: Foto) -> Dict[str, str] | None:
-    ruta_rel = normalizar_ruta_foto(foto.ruta)
-    
-    if not ruta_rel:
-        print(f"[DEBUG] _serializar_foto: foto_id={foto.id}, descartada (sin ruta normalizada)")
-        return None
-    ruta_abs = _resolver_ruta_absoluta(ruta_rel)
-    existe = os.path.isfile(ruta_abs)
-    
-    if not existe:
-        return None
+def _serializar_foto(foto: Foto) -> Dict[str, str | None]:
     tipo = (foto.tipo_foto or "desconocido").strip().lower() or "desconocido"
-
     return {
         "id": foto.id,
         "tipo_foto": tipo,
-        "ruta_rel": ruta_rel,
-        "ruta_abs": ruta_abs,
+        "ruta_rel": None,
+        "ruta_abs": None,
         "url": _foto_url(foto.id),
     }
+
 
 def _obtener_fotos_validas(mascota: Mascota | None) -> List[Dict[str, str]]:
     if not mascota:
@@ -394,23 +381,6 @@ def _worker_enviar_correo(app, mascota_id: int) -> None:
                 "Fallo al enviar correo automático de mascota %s", mascota_id
             )
 
-#        if ACTIVAR_MESSENGER:
-#            ok_fb = send_pet_fb_message(
-#                subject,
-#                datos_email,
-#                fotos_detalle,
-#                destinatarios_extra=destinatarios_extra,
-#            )
-#            if not ok_fb:
-#                current_app.logger.error(
-#                    "Fallo al enviar mensaje de Facebook de mascota %s", mascota_id
-#                )
-#        else:
-#            current_app.logger.info(
-#                "Messenger desactivado; no se envía mensaje para la mascota %s",
-#                mascota_id,
-#            )
-
         ok_fb_post = publish_pet_fb_post(
             subject,
             datos_email,
@@ -445,7 +415,6 @@ def _construir_datos_email(mascota: Mascota) -> Dict[str, object]:
         "Estado aparecida": mascota.estado_aparecida,
     }
 
-
 def _obtener_rutas_fotos(mascota: Mascota | None) -> List[Dict[str, object]]:
     """
     Devuelve, para cada foto de la mascota, un diccionario con toda la
@@ -457,26 +426,12 @@ def _obtener_rutas_fotos(mascota: Mascota | None) -> List[Dict[str, object]]:
         return fotos_info
 
     for foto in getattr(mascota, "fotos", []):
-        ruta_rel = normalizar_ruta_foto(foto.ruta)
-        ruta_abs = None
-
-        if ruta_rel:
-            ruta_abs_candidata = _resolver_ruta_absoluta(ruta_rel)
-            if ruta_abs_candidata and os.path.isfile(ruta_abs_candidata):
-                ruta_abs = ruta_abs_candidata
-            else:
-                current_app.logger.warning(
-                    "Foto no encontrada en disco: %s (mascota %s)",
-                    ruta_abs_candidata,
-                    mascota.id,
-                )
-
         fotos_info.append(
             {
                 "id": foto.id,
-                "tipo_foto": foto.tipo_foto,
-                "ruta_rel": ruta_rel,
-                "ruta_abs": ruta_abs,
+                "tipo_foto": foto.tipo_foto or "desconocido",
+                "ruta_rel": None,
+                "ruta_abs": None,
                 "url": _foto_url(foto.id),
                 "data": foto.data,
                 "mime_type": foto.mime_type,
@@ -1205,7 +1160,7 @@ def comparar_mascotas_desaparecidas():
 
     return render_template(
         "buscar.html",
-        modo=modo_vista,                     # <- usamos el modo detectado
+        modo=modo_vista,
         mascotas=mascotas,
         filtros=filtros,
         busqueda_realizada=busqueda_realizada,
@@ -1215,44 +1170,30 @@ def comparar_mascotas_desaparecidas():
 
 @main.route("/mascotas/<int:mascota_id>/identificar_raza", methods=["POST"])
 def identificar_raza_api(mascota_id: int):
-    """
-    Endpoint que toma las fotos de la mascota desaparecida indicada,
-    llama a la utilidad identificar_raza(...) y devuelve el resultado en JSON.
-    """
     mascota = Mascota.query.get_or_404(mascota_id)
-
     if (mascota.tipo_registro or "").lower() != "desaparecida":
-        return jsonify({
-            "ok": False,
-            "mensaje": "Solo se pueden identificar razas de mascotas registradas como desaparecidas."
-        }), 400
+        return jsonify({"ok": False, "mensaje": "Solo se pueden identificar razas de mascotas registradas como desaparecidas."}), 400
 
-    fotos_validas = _obtener_fotos_validas(mascota)
-    rutas_abs = [foto["ruta_abs"] for foto in fotos_validas if foto.get("ruta_abs")]
+    # Genera data: URLs desde los binarios almacenados
+    fotos_obj = [f for f in mascota.fotos if f.data]
+    data_urls = [
+        image_bytes_to_data_url(f.data, f.mime_type, f.nombre_archivo)
+        for f in fotos_obj
+    ][:5]  # opcional: límite de 5
 
-    if not rutas_abs:
-        return jsonify({
-            "ok": False,
-            "mensaje": "Esta mascota no tiene fotos disponibles para identificar la raza."
-        }), 400
-
-    # Opcional: limitar a las primeras 5 imágenes
-    rutas_abs = rutas_abs[:5]
+    if not data_urls:
+        return jsonify({"ok": False, "mensaje": "Esta mascota no tiene fotos disponibles para identificar la raza."}), 400
 
     try:
-        resultado = identificar_raza(rutas_abs)
+        resultado = identificar_raza(data_urls)
     except ValueError as exc:
         return jsonify({"ok": False, "mensaje": str(exc)}), 400
     except Exception as exc:
-        current_app.logger.exception(
-            "Error al identificar raza para la mascota %s", mascota_id
-        )
-        return jsonify({
-            "ok": False,
-            "mensaje": f"Ocurrió un error al identificar la raza: {exc}"
-        }), 500
+        current_app.logger.exception("Error al identificar raza para la mascota %s", mascota_id)
+        return jsonify({"ok": False, "mensaje": f"Ocurrió un error al identificar la raza: {exc}"}), 500
 
     return jsonify({"ok": True, "resultado": resultado})
+
 
 @main.route("/comparar_mascotas/<int:desaparecida_id>/candidatas", methods=["GET"])
 def comparar_mascotas_candidatas(desaparecida_id: int):
@@ -1341,6 +1282,19 @@ def comparar_mascotas_detalle(desaparecida_id: int, encontrada_id: int):
     fotos_encon_dict = {str(foto["id"]): foto for foto in fotos_encon}
     data_url_cache: Dict[int, str] = {}
 
+    def _get_data_url_from_id(foto_id: int) -> str:
+        if foto_id in data_url_cache:
+            return data_url_cache[foto_id]
+        foto_obj = Foto.query.get(foto_id)
+        if not foto_obj or not foto_obj.data:
+            raise ValueError("No se encontró la foto en la base de datos.")
+        data_url_cache[foto_id] = image_bytes_to_data_url(
+            foto_obj.data,
+            foto_obj.mime_type,
+            foto_obj.nombre_archivo,
+        )
+        return data_url_cache[foto_id]
+
     if request.method == "POST":
         accion = (request.form.get("accion") or "").strip()
 
@@ -1361,14 +1315,8 @@ def comparar_mascotas_detalle(desaparecida_id: int, encontrada_id: int):
                     error = "Las fotos seleccionadas no coinciden con el tipo elegido."
                 else:
                     try:
-                        data_desap = data_url_cache.setdefault(
-                            foto_desap["id"],
-                            image_to_data_url(foto_desap["ruta_abs"])
-                        )
-                        data_encon = data_url_cache.setdefault(
-                            foto_encon["id"],
-                            image_to_data_url(foto_encon["ruta_abs"])
-                        )
+                        data_desap = _get_data_url_from_id(foto_desap["id"])
+                        data_encon = _get_data_url_from_id(foto_encon["id"])
                         prompt = (
                             f"Compara estas dos fotos de perros (tipo de foto: {tipo}). "
                             "¿Corresponden al mismo perro? Da un porcentaje aproximado de match "
@@ -1392,10 +1340,7 @@ def comparar_mascotas_detalle(desaparecida_id: int, encontrada_id: int):
         elif accion == "comparar_todas":
             for foto_desap in fotos_desap:
                 try:
-                    data_desap = data_url_cache.setdefault(
-                        foto_desap["id"],
-                        image_to_data_url(foto_desap["ruta_abs"])
-                    )
+                    data_desap = _get_data_url_from_id(foto_desap["id"])
                 except Exception as exc:
                     current_app.logger.exception(
                         "Error al convertir la foto %s de la desaparecida %s",
@@ -1411,10 +1356,7 @@ def comparar_mascotas_detalle(desaparecida_id: int, encontrada_id: int):
 
                 for foto_encon in fotos_encon:
                     try:
-                        data_encon = data_url_cache.setdefault(
-                            foto_encon["id"],
-                            image_to_data_url(foto_encon["ruta_abs"])
-                        )
+                        data_encon = _get_data_url_from_id(foto_encon["id"])
                         resultado = _comparar_imagenes_openai(
                             PROMPT_COMPARAR_DOS,
                             [data_desap, data_encon]
@@ -1506,60 +1448,32 @@ def comparar_pareja_tipo_api(desaparecida_id: int, encontrada_id: int):
             "mensaje": "Ninguna de las mascotas tiene fotos de ese tipo."
         }), 400
 
-    foto_desap_id = str(foto_desap_payload.get("id") or "")
-    foto_encon_id = str(foto_encon_payload.get("id") or "")
+    foto_desap_id = foto_desap_payload.get("id")
+    foto_encon_id = foto_encon_payload.get("id")
 
-    foto_desap_datos = None
-    if foto_desap_id:
-        foto_desap_datos = next((f for f in fotos_desap_por_tipo[tipo] if str(f["id"]) == foto_desap_id), None)
-    if not foto_desap_datos:
-        ruta_abs = _extraer_ruta_absoluta_payload(foto_desap_payload)
-        if not ruta_abs:
-            return jsonify({
-                "ok": False,
-                "mensaje": "No se pudo localizar la ruta de la foto desaparecida."
-            }), 400
-        foto_desap_datos = {"ruta_abs": ruta_abs, "id": foto_desap_id or None, "tipo_foto": tipo}
+    # Buscar las fotos en BD y validar tipo
+    foto_desap_obj = Foto.query.get(foto_desap_id) if foto_desap_id else None
+    foto_encon_obj = Foto.query.get(foto_encon_id) if foto_encon_id else None
 
-    foto_encon_datos = None
-    if foto_encon_id:
-        foto_encon_datos = next((f for f in fotos_encon_por_tipo[tipo] if str(f["id"]) == foto_encon_id), None)
-    if not foto_encon_datos:
-        ruta_abs = _extraer_ruta_absoluta_payload(foto_encon_payload)
-        if not ruta_abs:
-            return jsonify({
-                "ok": False,
-                "mensaje": "No se pudo localizar la ruta de la foto encontrada."
-            }), 400
-        foto_encon_datos = {"ruta_abs": ruta_abs, "id": foto_encon_id or None, "tipo_foto": tipo}
+    if not foto_desap_obj or foto_desap_obj.mascota_id != mascota_desaparecida.id:
+        return jsonify({"ok": False, "mensaje": "No se encontró la foto desaparecida en la base de datos."}), 400
+    if not foto_encon_obj or foto_encon_obj.mascota_id != mascota_encontrada.id:
+        return jsonify({"ok": False, "mensaje": "No se encontró la foto encontrada en la base de datos."}), 400
 
-    ruta_desap_abs = foto_desap_datos.get("ruta_abs")
-    ruta_encon_abs = foto_encon_datos.get("ruta_abs")
+    if (foto_desap_obj.tipo_foto or "").strip().lower() != tipo:
+        return jsonify({"ok": False, "mensaje": "La foto desaparecida no coincide con el tipo elegido."}), 400
+    if (foto_encon_obj.tipo_foto or "").strip().lower() != tipo:
+        return jsonify({"ok": False, "mensaje": "La foto encontrada no coincide con el tipo elegido."}), 400
 
-    if not ruta_desap_abs or not os.path.isfile(ruta_desap_abs):
-        return jsonify({
-            "ok": False,
-            "mensaje": "La imagen de la mascota desaparecida no existe en disco."
-        }), 404
-
-    if not ruta_encon_abs or not os.path.isfile(ruta_encon_abs):
-        return jsonify({
-            "ok": False,
-            "mensaje": "La imagen de la mascota encontrada no existe en disco."
-        }), 404
+    if not foto_desap_obj.data or not foto_encon_obj.data:
+        return jsonify({"ok": False, "mensaje": "No hay datos binarios de alguna foto."}), 400
 
     try:
-        data_desap = image_to_data_url(ruta_desap_abs)
-        data_encon = image_to_data_url(ruta_encon_abs)
+        data_desap = image_bytes_to_data_url(foto_desap_obj.data, foto_desap_obj.mime_type, foto_desap_obj.nombre_archivo)
+        data_encon = image_bytes_to_data_url(foto_encon_obj.data, foto_encon_obj.mime_type, foto_encon_obj.nombre_archivo)
     except Exception as exc:
-        current_app.logger.exception(
-            "Error al convertir imágenes a data URL para la pareja (%s, %s)",
-            desaparecida_id, encontrada_id
-        )
-        return jsonify({
-            "ok": False,
-            "mensaje": f"No se pudieron procesar las imágenes: {exc}"
-        }), 500
+        current_app.logger.exception("Error al convertir imágenes a data URL")
+        return jsonify({"ok": False, "mensaje": f"No se pudieron procesar las imágenes: {exc}"}), 500
 
     prompt = (
         f"Compara estas dos fotos (tipo: {tipo}). "
@@ -1593,8 +1507,8 @@ def comparar_pareja_tipo_api(desaparecida_id: int, encontrada_id: int):
         "mensaje": resultado_texto,
         "score": score,
         "tipo": tipo,
-        "foto_desap_id": foto_desap_datos.get("id"),
-        "foto_encon_id": foto_encon_datos.get("id"),
+        "foto_desap_id": foto_desap_obj.id,
+        "foto_encon_id": foto_encon_obj.id,
     })
 
 @main.route(
@@ -1617,26 +1531,36 @@ def comparar_pareja_todas_api(desaparecida_id: int, encontrada_id: int):
             "mensaje": "La mascota encontrada indicada no es válida."
         }), 400
 
-    fotos_desap = _obtener_fotos_validas(mascota_desaparecida)
-    fotos_encon = _obtener_fotos_validas(mascota_encontrada)
+    fotos_desap_obj = [f for f in mascota_desaparecida.fotos if f.data]
+    fotos_encon_obj = [f for f in mascota_encontrada.fotos if f.data]
 
-    if not fotos_desap:
+    if not fotos_desap_obj:
         return jsonify({
             "ok": False,
             "mensaje": "La mascota desaparecida no tiene fotos disponibles."
         }), 400
 
-    if not fotos_encon:
+    if not fotos_encon_obj:
         return jsonify({
             "ok": False,
             "mensaje": "La mascota encontrada no tiene fotos disponibles."
         }), 400
 
-    rutas_desap = [foto["ruta_abs"] for foto in fotos_desap if foto.get("ruta_abs")]
-    rutas_encon = [foto["ruta_abs"] for foto in fotos_encon if foto.get("ruta_abs")]
+    try:
+        data_desap = [
+            image_bytes_to_data_url(f.data, f.mime_type, f.nombre_archivo)
+            for f in fotos_desap_obj
+        ]
+        data_encon = [
+            image_bytes_to_data_url(f.data, f.mime_type, f.nombre_archivo)
+            for f in fotos_encon_obj
+        ]
+    except Exception as exc:
+        current_app.logger.exception("Error al convertir imágenes a data URL en comparar_todas")
+        return jsonify({"ok": False, "mensaje": f"No se pudieron procesar las imágenes: {exc}"}), 500
 
     try:
-        resultado = comparar_fotos_todas(rutas_desap, rutas_encon)
+        resultado = comparar_fotos_todas(data_desap, data_encon)
     except ValueError as exc:
         return jsonify({"ok": False, "mensaje": str(exc)}), 400
     except Exception as exc:

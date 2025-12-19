@@ -186,8 +186,8 @@
         #btn-crear { margin-top: 6px; }
         body, input, select, button, textarea { line-height: 1.20; }
 
-        input[placeholder*="(obligatorio)"]::placeholder,
-        textarea[placeholder*="(obligatorio)"]::placeholder,
+        input[placeholder*="(*)"]::placeholder,
+        textarea[placeholder*="(*)"]::placeholder,
         input[required]::placeholder,
         textarea[required]::placeholder {
             font-weight: 700;
@@ -210,8 +210,8 @@
         }
 
         body.layout-crear .header-bar h1 { font-weight: 600; }
-        body.layout-crear input[placeholder*="(obligatorio)"]::placeholder,
-        body.layout-crear textarea[placeholder*="(obligatorio)"]::placeholder,
+        body.layout-crear input[placeholder*="(*)"]::placeholder,
+        body.layout-crear textarea[placeholder*="(*)"]::placeholder,
         body.layout-crear input[required]::placeholder,
         body.layout-crear textarea[required]::placeholder { font-weight: 500; }
         body.layout-crear select:required:invalid { font-weight: 500; }
@@ -268,7 +268,7 @@
                         <input type="text"
                                id="telefono"
                                name="propietario_telefono"
-                               placeholder="Telefono (obligatorio)"
+                               placeholder="Telefono (*)"
                                maxlength="20"
                                value="{{ mascota.propietario_telefono if mascota else '' }}"
                                required>
@@ -284,14 +284,14 @@
                 {% else %}
                     <input type="email"
                            name="propietario_email"
-                           placeholder="Email propietario (obligatorio)"
+                           placeholder="Email propietario (*)"
                            value="{{ mascota.propietario_email if mascota else '' }}"
                            required>
                     <div class="campo-telefono">
                         <input type="text"
                                id="telefono"
                                name="propietario_telefono"
-                               placeholder="Telefono (obligatorio)"
+                               placeholder="Telefono (*)"
                                maxlength="20"
                                value="{{ mascota.propietario_telefono if mascota else '' }}"
                                required>
@@ -300,7 +300,7 @@
                         <input type="text"
                                id="nombre"
                                name="nombre"
-                               placeholder="Nombre mascota (obligatorio)"
+                               placeholder="Nombre mascota (*)"
                                maxlength="30"
                                value="{{ mascota.nombre if mascota else '' }}"
                                required>
@@ -315,7 +315,7 @@
                         <input type="text"
                                name="codigo_postal"
                                id="codigo_postal"
-                               placeholder="C. Postal (obl)"
+                               placeholder="C. Postal (*)"
                                value="{{ mascota.codigo_postal if mascota else '' }}"
                                maxlength="5"
                                pattern="\d{5}"
@@ -327,13 +327,13 @@
                         <select name="zona"
                                 id="zona"
                                 required
-                                data-placeholder="Localidad (obl)"
+                                data-placeholder="Localidad (*)"
                                 data-zona-inicial="{{ mascota.zona if mascota and mascota.zona else '' }}"
                                 {% if not mascota or not mascota.zona %}disabled{% endif %}>
                             {% if mascota and mascota.zona %}
                                 <option value="{{ mascota.zona }}">{{ mascota.zona }}</option>
                             {% else %}
-                                <option value="">Localidad (obl)</option>
+                                <option value="">Localidad (*)</option>
                             {% endif %}
                         </select>
                     </div>
@@ -344,7 +344,7 @@
                            id="fecha_registro"
                            name="fecha_registro"
                            class="input-fecha-registro"
-                           placeholder="Fecha (obl)"
+                           placeholder="Fecha (*)"
                            maxlength="10"
                            pattern="\d{2}\/\d{2}\/\d{4}"
                            title="Formato requerido: dd/mm/aaaa"
@@ -365,7 +365,7 @@
                     <input type="text"
                            id="especie"
                            name="especie"
-                           placeholder="Especie (obligatorio)"
+                           placeholder="Especie (*)"
                            value="{{ mascota.especie if mascota else '' }}"
                            required>
                 </div>
@@ -374,7 +374,7 @@
                     <input type="text"
                            id="raza"
                            name="raza"
-                           placeholder="{{ 'Raza (obligatorio)' if tipo_registro == 'desaparecida' else 'Raza(opcional)' }}"
+                           placeholder="{{ 'Raza (*)' if tipo_registro == 'desaparecida' else 'Raza(opcional)' }}"
                            value="{{ mascota.raza if mascota else '' }}"
                            {% if tipo_registro == 'desaparecida' %}required{% endif %}>
                 </div>
@@ -385,7 +385,7 @@
                         <option value="" disabled
                                 {% if not mascota or not mascota.sexo %}selected{% endif %}
                                 {% if tipo_registro == 'desaparecida' %}data-obligatorio="1"{% endif %}>
-                            {{ 'Sexo (obl)' if tipo_registro == 'desaparecida' else 'Sexo (opcional)' }}
+                            {{ 'Sexo (*)' if tipo_registro == 'desaparecida' else 'Sexo (opcional)' }}
                         </option>
                         <option value="macho" {% if mascota and mascota.sexo == 'macho' %}selected{% endif %}>macho</option>
                         <option value="hembra" {% if mascota and mascota.sexo == 'hembra' %}selected{% endif %}>hembra</option>
@@ -398,13 +398,13 @@
             <div class="row-compact row-caracteristicas">
                 <input type="text"
                        name="color"
-                       placeholder="Color (obligatorio)"
+                       placeholder="Color (*)"
                        value="{{ mascota.color if mascota else '' }}"
                        required>
                 <select name="tamano" required>
                     <option value="" disabled data-obligatorio="1"
                             {% if not mascota or not mascota.tamano %}selected{% endif %}>
-                        Tamaño (obligatorio)
+                        Tamaño (*)
                     </option>
                     <option value="pequeño" {% if mascota and mascota.tamano == 'pequeño' %}selected{% endif %}>pequeño</option>
                     <option value="mediano" {% if mascota and mascota.tamano == 'mediano' %}selected{% endif %}>mediano</option>
@@ -496,7 +496,7 @@
 
     const inputCP = document.getElementById("codigo_postal");
     const selectZona = document.getElementById("zona");
-    const zonaPlaceholder = selectZona ? selectZona.dataset.placeholder || "Localidad (obl)" : "Localidad (obl)";
+    const zonaPlaceholder = selectZona ? selectZona.dataset.placeholder || "Localidad (*)" : "Localidad (*)";
     const zonaInicial = selectZona ? selectZona.dataset.zonaInicial || "" : "";
 
     const baseLocalidadesUrl = "{{ url_for('main.api_localidades', codigo_postal='__CP__') }}";
