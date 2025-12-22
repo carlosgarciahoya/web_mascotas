@@ -13,8 +13,9 @@ import mimetypes
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, jsonify, current_app,
-    send_file, abort
+    send_file, abort, make_response  # <-- añade make_response aquí
 )
+
 from flask import has_request_context
 
 from sqlalchemy import or_, func
@@ -27,6 +28,9 @@ from .utils.envia_mail import send_pet_email
 # from .utils.prueba_envio_facebook import send_pet_fb_message
 from .utils.publicar_fb import publish_pet_fb_post
 
+# from para envio mensajes a instagram
+from .utils.publicar_en_instagram import publicar_en_instagram
+
 from .utils.comparar_fotos_todas import comparar_fotos_todas
 from .utils.identificar_raza import identificar_raza
 from openai import OpenAI
@@ -34,6 +38,8 @@ from openai import OpenAI
 from .utils.cp_localidades import cp_localidades
 
 from .utils.calcula_KM_con_CP import calcula_KM_con_CP  # nuevo import
+
+
 
 main = Blueprint('main', __name__)
 
@@ -220,36 +226,44 @@ from flask import has_request_context, url_for, current_app  # current_app ya lo
 
 def _foto_url(foto_id: int) -> str:
     """
-    Devuelve la URL absoluta del endpoint de la foto.
-    - Si hay contexto de petición: usa url_for con _external=True.
-    - Si no hay contexto (tareas en segundo plano/CLI): usa EXTERNAL_BASE_URL.
+    Devuelve la URL absoluta del endpoint de la foto, siempre con .jpg.
     """
-    if has_request_context():
-        return url_for("main.ver_foto", foto_id=foto_id, _external=True)
-
     base = current_app.config.get("EXTERNAL_BASE_URL")
     if base:
-        return f"{base.rstrip('/')}/foto/{foto_id}"
+        return f"{base.rstrip('/')}/foto/{foto_id}.jpg"
+
+    if has_request_context():
+        return url_for("main.ver_foto_jpg", foto_id=foto_id, _external=True)
 
     raise RuntimeError(
         "No hay contexto de petición y no se definió EXTERNAL_BASE_URL; "
         "no se puede construir la URL de la foto."
     )
 
-
 @main.route("/foto/<int:foto_id>")
 def ver_foto(foto_id: int):
     foto = Foto.query.get_or_404(foto_id)
+    if not foto.data:
+        abort(404)
 
-    if foto.data:
-        return send_file(
+    resp = make_response(
+        send_file(
             io.BytesIO(foto.data),
-            mimetype=foto.mime_type or "application/octet-stream",
-            download_name=foto.nombre_archivo or None,
+            mimetype=foto.mime_type or "image/jpeg",
+            as_attachment=False,
+            download_name=foto.nombre_archivo or f"{foto_id}.jpg",
+            conditional=True,
         )
+    )
+    resp.headers["Cache-Control"] = "public, max-age=31536000"
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
 
-    # Sin datos binarios, devolvemos 404
-    abort(404)
+@main.route("/foto/<int:foto_id>.jpg")
+def ver_foto_jpg(foto_id: int):
+    return ver_foto(foto_id)
 
 def obtener_fotos_existentes(mascota: Mascota) -> List[Dict[str, str]]:
     fotos_serializadas: List[Dict[str, str]] = []
@@ -361,7 +375,6 @@ def _worker_enviar_correo(app, mascota_id: int) -> None:
             )
             return
 
-
         subject = (
             f"🐶🐱 mascota {(mascota.tipo_registro or '').strip()}".strip() or "Mascota"
         )
@@ -391,6 +404,20 @@ def _worker_enviar_correo(app, mascota_id: int) -> None:
             current_app.logger.error(
                 "Fallo al publicar en el feed de Facebook de la mascota %s", mascota_id
             )
+
+        # NUEVO: publicar en Instagram
+        try:
+            fotos_urls = [f["url"] for f in fotos_detalle if f.get("url")]
+            caption = (
+                f"🚨 Mascota {mascota.tipo_registro}:\n"
+                f"Nombre: {mascota.nombre}\n"
+                f"Zona: {(mascota.zona or '').strip()} CP {(mascota.codigo_postal or '').strip()}\n"
+                f"Descripción: {mascota.descripcion or ''}\n"
+                f"Contacto: {mascota.propietario_email or ''} {mascota.propietario_telefono or ''}"
+            )
+            publicar_en_instagram(caption, fotos_urls)
+        except Exception as e:
+            current_app.logger.warning("No se pudo publicar en Instagram: %s", e)
 
 def _construir_datos_email(mascota: Mascota) -> Dict[str, object]:
     return {
@@ -446,6 +473,7 @@ def _calcular_radio_permitido(fecha_desaparecida: date, fecha_encontrada: date) 
     dias = max((fecha_encontrada - fecha_desaparecida).days, 0)
     dias_efectivos = max(1, dias)  # garantiza al menos 1 día
     return min(RADIO_MAX_KM, dias_efectivos * KM_POR_DIA)
+
 
 def _calcular_destinatarios_extra(mascota: Mascota) -> List[str]:
     destinatarios: List[str] = []
@@ -503,35 +531,6 @@ def _calcular_destinatarios_extra(mascota: Mascota) -> List[str]:
             destinatarios.append(correo_norm)
 
     return destinatarios
-
-
-def _calcular_destinatarios_extra(mascota: Mascota) -> List[str]:
-    destinatarios: List[str] = []
-    correo_propietario = (mascota.propietario_email or "").strip()
-    if correo_propietario:
-        destinatarios.append(correo_propietario)
-
-    if (mascota.tipo_registro or "").lower() == "encontrada":
-        registros_previos = (
-            Mascota.query.with_entities(Mascota.propietario_email)
-            .filter(
-                Mascota.tipo_registro == "desaparecida",
-                Mascota.fecha_registro <= mascota.fecha_registro,
-                Mascota.fecha_aparecida.is_(None),
-                Mascota.propietario_email.isnot(None),
-                Mascota.propietario_email != "",
-            )
-            .distinct()
-            .all()
-        )
-
-        for (correo,) in registros_previos:
-            correo_norm = (correo or "").strip()
-            if correo_norm and correo_norm not in destinatarios:
-                destinatarios.append(correo_norm)
-
-    return destinatarios
-
 
 def construir_filtros_generales(form) -> Dict[str, str]:
     return {
@@ -973,7 +972,6 @@ def eliminar_mascota(mascota_id):
 
     flash("Mascota eliminada correctamente.", "success")
     return redirect(url_for("main.modificar_mascotas"))
-
 
 @main.route("/buscar_mascotas", methods=["GET", "POST"])
 def buscar_mascotas():

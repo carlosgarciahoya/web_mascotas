@@ -1,10 +1,15 @@
 import requests, time
+import os
+
+# este es autonomo es solo para pruebas, no enlaza con routes.py
 
 API = "https://graph.facebook.com/v18.0"
-IG_USER_ID = "17841478301161922"                 # instagram_business_account.id
-ACCESS_TOKEN = "EAAXWEbgy8BwBQEc2CdSda8ZBJPEZCZBI3vwJY43neK13oNZCAbSfxme2OOlImJGgkdMckk13v9wYGBrD6x80gxFZBbTnypZCiyaJnfHjmwfrd7oShLDFOHZA1ffvtvku59s56Wo454u3UFp1YOPkIfjCAJT7yRZA6TVHPwWDhp3MCbcRUsiH9a0TOC5CGeSKdLlfQQCB"               # Page access token
 IMAGE_URL = "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=1080"
-CAPTION = "Publicación de prueba desde la API 📸"
+CAPTION = "Publicación de prueba desde la web buscarmascotas.com  📸"
+
+IG_USER_ID = os.environ.get("IG_USER_ID")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
+
 # 1) Crear contenedor
 r1 = requests.post(
     f"{API}/{IG_USER_ID}/media",
