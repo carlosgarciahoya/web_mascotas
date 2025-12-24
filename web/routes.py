@@ -224,11 +224,19 @@ def eliminar_foto_obj(foto: Foto | None) -> None:
 
 from flask import has_request_context, url_for, current_app  # current_app ya lo importas arriba
 
-def _foto_url(foto_id: int) -> str:
+def _foto_url(foto_id: int, for_instagram: bool = False) -> str:
     """
     Devuelve la URL absoluta del endpoint de la foto, siempre con .jpg.
+
+    Si for_instagram=True, se intenta usar IG_MEDIA_BASE_URL (p.ej. tu host
+    onrender.com) antes que EXTERNAL_BASE_URL. Así los usuarios seguirán
+    viendo buscarmascotas.com y solo IG usará la base alternativa.
     """
-    base = current_app.config.get("EXTERNAL_BASE_URL")
+    base = None
+    if for_instagram:
+        base = current_app.config.get("IG_MEDIA_BASE_URL")
+    if not base:
+        base = current_app.config.get("EXTERNAL_BASE_URL")
     if base:
         return f"{base.rstrip('/')}/foto/{foto_id}.jpg"
 
@@ -236,12 +244,15 @@ def _foto_url(foto_id: int) -> str:
         return url_for("main.ver_foto_jpg", foto_id=foto_id, _external=True)
 
     raise RuntimeError(
-        "No hay contexto de petición y no se definió EXTERNAL_BASE_URL; "
+        "No hay contexto de petición y no se definió EXTERNAL_BASE_URL ni IG_MEDIA_BASE_URL; "
         "no se puede construir la URL de la foto."
     )
 
 @main.route("/foto/<int:foto_id>")
 def ver_foto(foto_id: int):
+    """
+    Sirve la foto con cabeceras de caché/CORS/seguridad.
+    """
     foto = Foto.query.get_or_404(foto_id)
     if not foto.data:
         abort(404)
@@ -263,7 +274,16 @@ def ver_foto(foto_id: int):
 
 @main.route("/foto/<int:foto_id>.jpg")
 def ver_foto_jpg(foto_id: int):
+    """
+    Alias con extensión fija para compatibilidad.
+    """
     return ver_foto(foto_id)
+
+def _foto_url_ig(foto_id: int) -> str:
+    """
+    Helper opcional para construir la URL de foto usando siempre IG_MEDIA_BASE_URL.
+    """
+    return _foto_url(foto_id, for_instagram=True)
 
 def obtener_fotos_existentes(mascota: Mascota) -> List[Dict[str, str]]:
     fotos_serializadas: List[Dict[str, str]] = []
@@ -405,16 +425,41 @@ def _worker_enviar_correo(app, mascota_id: int) -> None:
                 "Fallo al publicar en el feed de Facebook de la mascota %s", mascota_id
             )
 
-        # NUEVO: publicar en Instagram
+        # NUEVO: publicar en Instagram con nueva variable
+        # construye las URLs con la base específica para IG (IG_MEDIA_BASE_URL)
         try:
-            fotos_urls = [f["url"] for f in fotos_detalle if f.get("url")]
-            caption = (
-                f"🚨 Mascota {mascota.tipo_registro}:\n"
-                f"Nombre: {mascota.nombre}\n"
-                f"Zona: {(mascota.zona or '').strip()} CP {(mascota.codigo_postal or '').strip()}\n"
-                f"Descripción: {mascota.descripcion or ''}\n"
-                f"Contacto: {mascota.propietario_email or ''} {mascota.propietario_telefono or ''}"
-            )
+            fotos_urls = [
+                _foto_url(foto.id, for_instagram=True)
+                for foto in getattr(mascota, "fotos", [])
+                if foto.data
+            ]
+            # Reutiliza el formato largo
+            caption_lines = [
+                f"🐶🐱 mascota {mascota.tipo_registro}",
+                "",
+                "Datos de la mascota:",
+                "--------------------",
+                f"ID: {mascota.id}",
+                f"Tipo de registro: {mascota.tipo_registro}",
+                f"Nombre: {mascota.nombre}",
+                f"Especie: {mascota.especie}",
+                f"Raza: {mascota.raza or 'N/D'}",
+                f"Edad: {mascota.edad or 'N/D'}",
+                f"Zona: {(mascota.zona or '').strip()}",
+                f"Código postal: {(mascota.codigo_postal or '').strip()}",
+                f"Email contacto: {mascota.propietario_email or 'N/D'}",
+                f"Teléfono contacto: {mascota.propietario_telefono or 'N/D'}",
+                f"Color: {mascota.color or 'N/D'}",
+                f"Sexo: {mascota.sexo or 'N/D'}",
+                f"Chip: {mascota.chip or 'N/D'}",
+                f"Peso: {mascota.peso or 'N/D'}",
+                f"Tamaño: {mascota.tamano or 'N/D'}",
+                f"Descripción: {mascota.descripcion or 'N/D'}",
+                f"Fecha registro: {mascota.fecha_registro or 'N/D'}",
+                f"Fecha aparecida: {mascota.fecha_aparecida or 'N/D'}",
+                f"Estado aparecida: {mascota.estado_aparecida or 'N/D'}",
+            ]
+            caption = "\n".join(caption_lines)
             publicar_en_instagram(caption, fotos_urls)
         except Exception as e:
             current_app.logger.warning("No se pudo publicar en Instagram: %s", e)

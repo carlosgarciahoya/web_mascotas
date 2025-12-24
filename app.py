@@ -22,6 +22,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = os.environ.get("SQLALCHEMY_ECHO", "0") == "1"
 
 app.config["EXTERNAL_BASE_URL"] = os.environ.get("EXTERNAL_BASE_URL", "")
+app.config["IG_MEDIA_BASE_URL"] = os.getenv("IG_MEDIA_BASE_URL")
 
 # Inicializar ORM y migraciones
 db.init_app(app)
