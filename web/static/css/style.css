@@ -17,12 +17,12 @@ body {
 header {
     background-color: #4CAF50;
     color: white;
-    padding: 15px 20px;
+    padding: 13px 18px;
     text-align: center;
 }
 
 header h1 {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 nav a {
@@ -39,9 +39,9 @@ nav a:hover {
 /* Contenedor principal */
 main {
     max-width: 900px;
-    margin: 30px auto;
+    margin: 25px auto;
     background: white;
-    padding: 25px;
+    padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
@@ -56,7 +56,7 @@ h2 {
 form input, form select, form button {
     width: 100%;
     padding: 10px 12px;
-    margin: 8px 0;
+    margin: 6px 0;
     border-radius: 5px;
     border: 1px solid #ccc;
     font-size: 1rem;
@@ -383,4 +383,323 @@ footer {
 }
 .btn-accion-peligro:hover {
     background-color: #c0392b;
+}
+
+/* =========================
+   Específico vista crear/editar mascota (layout-crear)
+   ========================= */
+body.layout-crear {
+    font-size: 0.90rem;
+    line-height: 1.20;
+}
+body.layout-crear .container {
+    width: 98% !important;
+    max-width: 1150px;
+    margin: 0 auto;
+}
+body.layout-crear input,
+body.layout-crear select,
+body.layout-crear textarea,
+body.layout-crear button {
+    font-size: 0.90rem;
+}
+
+/* Cabecera de la vista crear */
+body.layout-crear .header-bar {
+    position: relative;
+    display: block;
+    margin-bottom: 2px;
+    background-color: #4CAF50;
+    color: #fff;
+    padding: 2px 8px;
+}
+body.layout-crear .header-bar h1 {
+    text-align: center;
+    margin: 2px 0 0 0;
+    line-height: 1.15;
+    color: #fff;
+    font-weight: 600;
+}
+body.layout-crear .btn-volver {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #19024e;
+    color: white;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+body.layout-crear .btn-volver:hover { background-color: #f23131; }
+
+/* Ajustes de layout */
+body.layout-crear main { margin-top: 0; }
+body.layout-crear .flash-container { max-width: 1100px; margin: 0 auto 2px auto; }
+body.layout-crear .flash { padding: 6px 10px; border-radius: 3px; margin: 2px auto; font-weight: 500; max-width: 900px; }
+body.layout-crear .flash.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+body.layout-crear .flash.error   { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+
+/* Filas compactas */
+body.layout-crear .row-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 0;
+}
+body.layout-crear .row-compact input,
+body.layout-crear .row-compact select,
+body.layout-crear .row-compact textarea {
+    flex: 1 1 160px;
+    min-width: 135px;
+    padding: 5px;
+}
+body.layout-crear textarea { min-height: 90px; }
+
+/* Contacto */
+body.layout-crear .row-contacto input { flex: 1 1 240px; min-width: 200px; }
+body.layout-crear .row-contacto .campo-telefono { flex: 1 1 110px; min-width: 110px; display:flex; }
+body.layout-crear .row-contacto .campo-telefono input { flex:1 1 auto; }
+body.layout-crear .row-contacto .campo-nombre { flex: 1 1 210px; min-width: 190px; display:flex; }
+body.layout-crear .row-contacto .campo-nombre input { flex:1 1 auto; }
+
+/* Identificación */
+body.layout-crear .row-identificacion { align-items: stretch; flex-wrap: nowrap; }
+body.layout-crear .row-identificacion .campo-ubicacion {
+    flex: 1.4 1 320px;
+    min-width: 260px;
+    display:flex;
+    gap:6px;
+}
+body.layout-crear .campo-ubicacion .campo-codigo-postal {
+    flex: 0 0 90px;
+    display:flex;
+}
+body.layout-crear .campo-ubicacion .campo-codigo-postal input {
+    text-align:center;
+    letter-spacing: 1px;
+}
+body.layout-crear .campo-ubicacion .campo-zona {
+    flex: 1 1 auto;
+    display:flex;
+}
+body.layout-crear .campo-ubicacion .campo-zona select,
+body.layout-crear .campo-ubicacion .campo-codigo-postal input { flex:1 1 auto; width:100%; }
+
+body.layout-crear .row-identificacion .campo-fecha-registro {
+    flex: 0 0 145px;
+    max-width: 145px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+body.layout-crear .row-identificacion .campo-fecha-registro .input-fecha-registro {
+    flex: 1 1 auto;
+    min-width: 100px;
+    text-align: center;
+    font-size: 0.90rem;
+    padding: 6px;
+}
+body.layout-crear .row-identificacion .campo-fecha-registro .btn-date {
+    min-width: 30px;
+    padding: 5px;
+    background:#eee;
+    border:1px solid #ccc;
+    border-radius:6px;
+    cursor:pointer;
+}
+body.layout-crear .row-identificacion .campo-fecha-registro .btn-date:hover { background:#ddd; }
+body.layout-crear #fecha_registro_picker {
+    position:absolute; width:0; height:0; opacity:0; border:0; padding:0; pointer-events:none;
+}
+
+body.layout-crear .row-identificacion .campo-especie,
+body.layout-crear .row-identificacion .campo-raza,
+body.layout-crear .row-identificacion .campo-sexo {
+    flex: 0 1 145px;
+    min-width: 130px;
+    display:flex;
+}
+body.layout-crear .row-identificacion .campo-sexo { flex: 0 1 120px; min-width: 115px; }
+body.layout-crear .row-identificacion .campo-especie input,
+body.layout-crear .row-identificacion .campo-raza input,
+body.layout-crear .row-identificacion .campo-sexo select { flex:1 1 auto; }
+
+/* Características */
+body.layout-crear .row-caracteristicas { flex-wrap: nowrap; }
+body.layout-crear .row-caracteristicas input,
+body.layout-crear .row-caracteristicas select { flex:1 1 130px; min-width:115px; }
+
+/* Descripción */
+body.layout-crear textarea[name="descripcion"] {
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    resize: vertical;
+    overflow-y: auto;
+}
+
+/* Fotos */
+body.layout-crear .foto-uploader { border:1px solid #ccc; border-radius:10px; padding:8px; margin-top:6px; background:#f9f9f9; }
+body.layout-crear .foto-uploader-line { display:flex; align-items:center; gap:6px; flex-wrap: nowrap; }
+body.layout-crear .label-foto { font-size: 0.95rem; font-weight: 500; white-space: nowrap; }
+body.layout-crear .inline-group {
+    display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;
+}
+body.layout-crear .inline-group select { flex: 0 0 190px; height: 25px; padding: 2px 8px; font-size: 0.88rem; line-height: 1.10; }
+body.layout-crear .inline-group input[type="file"] {
+    flex: 1 1 260px; min-width: 220px; max-width: 340px;
+    height: 25px; font-size: 0.88rem; line-height: 1.10; padding: 2px 6px;
+}
+
+body.layout-crear .btn-add-foto {
+    background:#4CAF50;
+    color:#fff;
+    border:none;
+    padding:2px 6px;
+    border-radius:5px;
+    cursor:pointer;
+    flex:0 0 auto;
+    font-size: 0.72rem;
+    line-height: 1.05;
+    min-width: 0;
+    white-space: nowrap;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width: auto !important;
+    flex-shrink:0;
+}
+body.layout-crear .btn-add-foto:hover { background:#45a049; }
+
+body.layout-crear .foto-lista { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; padding:0; }
+body.layout-crear .foto-item {
+    list-style:none;
+    background:#eef;
+    border-radius:10px;
+    min-width:110px;
+    max-width:140px;
+    flex:0 0 120px;
+    text-align:center;
+    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: visible;
+}
+body.layout-crear .foto-item figure { margin:0; display:flex; flex-direction:column; height:100%; }
+body.layout-crear .foto-item img { width:100%; height:100px; object-fit:cover; display:block; }
+body.layout-crear .foto-item figcaption { padding:4px 6px; font-size:0.82rem; font-weight:500; background:#dbe2ff; color:#2c3e50; text-transform:capitalize; }
+body.layout-crear .foto-item:hover { box-shadow:0 3px 8px rgba(0,0,0,0.18); }
+body.layout-crear .foto-item-vacio { background:none; box-shadow:none; cursor:default; min-width:220px; }
+
+/* Botón submit */
+body.layout-crear #btn-crear { margin-top: 6px; }
+
+/* Placeholders y selects obligatorios */
+body.layout-crear input[placeholder*="(*)"]::placeholder,
+body.layout-crear textarea[placeholder*="(*)"]::placeholder,
+body.layout-crear input[required]::placeholder,
+body.layout-crear textarea[required]::placeholder {
+    font-weight: 500;
+    color: #333;
+    opacity: 1;
+}
+body.layout-crear select:required:invalid { font-weight: 500; color: #333; }
+body.layout-crear select:required:not(:invalid) { font-weight: 400; }
+body.layout-crear select option[value=""] { font-weight: 500; }
+body.layout-crear strong,
+body.layout-crear b { font-weight: 600; }
+
+/* Ajustes responsivos específicos de la vista */
+@media (max-width: 900px) {
+  /* Cabecera y botón volver */
+  body.layout-crear .header-bar {
+    padding: 10px;
+    text-align: center;
+  }
+  body.layout-crear .header-bar h1 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+  body.layout-crear .btn-volver {
+    display: block;
+    position: static;
+    transform: none;
+    width: 100%;
+    margin: 8px 0 12px 0;
+    text-align: center;
+  }
+
+  /* Campos con fondo azul claro y más altos */
+  body.layout-crear form input,
+  body.layout-crear form select,
+  body.layout-crear form textarea {
+    background: #e0f7ff;
+    font-size: 16px;
+    line-height: 1.2;
+    padding: 12px 14px;
+    height: auto;
+    min-height: 60px;
+    margin: 6px 0;
+  }
+
+  /* Quita espacios extra entre filas */
+  body.layout-crear form,
+  body.layout-crear form > div,
+  body.layout-crear form .row-compact,
+  body.layout-crear form .row-contacto,
+  body.layout-crear form .row-identificacion,
+  body.layout-crear form .row-caracteristicas,
+  body.layout-crear form .foto-uploader {
+    display: block;
+    margin: 0 0 8px 0;
+    padding: 0;
+    gap: 0;
+    width: 100%;
+  }
+
+  /* Descripción a todo el ancho, más alta y sin limitaciones */
+  body.layout-crear #descripcion {
+    display: block;
+    width: 100%;
+    min-height: 220px;
+    height: auto;
+    max-height: none;
+    font-size: 20px;
+    padding: 16px 18px;
+  }
+  /* Que no herede el flex ni el min-width de .row-compact */
+  body.layout-crear .row-compact #descripcion {
+    flex: none;
+    min-width: 0;
+  }
+
+  /* Fotos: el texto va en su propia línea y sin partirse */
+  body.layout-crear .foto-uploader-line {
+    display: block;
+  }
+  body.layout-crear .foto-uploader label {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    margin: 8px 0 4px 0;
+    font-size: 15px;
+  }
+  body.layout-crear .inline-group {
+    display: block;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+  }
+  body.layout-crear .inline-group > * {
+    width: 100%;
+    margin: 6px 0 0 0;
+  }
+
+  /* Contenedor principal más compacto */
+  body.layout-crear main {
+    padding: 8px 10px;
+    margin: 0;
+    box-shadow: none;
+  }
 }

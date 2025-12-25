@@ -2,230 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if modo == 'modificar' %}Editar Mascota{% else %}Crear Mascota{% endif %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body.layout-crear { font-size: 0.90rem; }
-        body.layout-crear .container { width: 98% !important; max-width: 1150px; margin: 0; }
-        body.layout-crear input,
-        body.layout-crear select,
-        body.layout-crear textarea,
-        body.layout-crear button { font-size: 0.90rem; }
-
-        .header-bar {
-            position: relative;
-            display: block;
-            margin-bottom: 2px;
-            background-color: #4CAF50;
-            color: #fff;
-            padding: 2px 8px;
-        }
-        .header-bar h1 {
-            text-align: center;
-            margin: 2px 0 0 0;
-            line-height: 1.15;
-            color: #fff;
-        }
-        .btn-volver {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: #19024e;
-            color: white;
-            padding: 6px 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-volver:hover { background-color: #f23131; }
-
-        main { margin-top: 0; }
-
-        .flash-container { max-width: 1100px; margin: 0 auto 2px auto; }
-        .flash { padding: 6px 10px; border-radius: 3px; margin: 2px auto; font-weight: 600; max-width: 900px; }
-        .flash.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
-        .flash.error   { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
-
-        .row-compact { display:flex; flex-wrap:wrap; gap:5px; margin-top:0; }
-        .row-compact input,
-        .row-compact select,
-        .row-compact textarea { flex:1 1 160px; min-width:135px; padding:5px; }
-        textarea { min-height: 90px; }
-
-        .row-contacto input { flex: 1 1 240px; min-width: 200px; }
-        .row-contacto .campo-telefono { flex: 1 1 110px; min-width: 110px; display:flex; }
-        .row-contacto .campo-telefono input { flex:1 1 auto; }
-        .row-contacto .campo-nombre { flex: 1 1 210px; min-width: 190px; display:flex; }
-        .row-contacto .campo-nombre input { flex:1 1 auto; }
-
-        .row-identificacion { align-items: stretch; flex-wrap: nowrap; }
-        .row-identificacion .campo-ubicacion {
-            flex: 1.4 1 320px;
-            min-width: 260px;
-            display:flex;
-            gap:6px;
-        }
-        .campo-ubicacion .campo-codigo-postal {
-            flex: 0 0 90px;
-            display:flex;
-        }
-        .campo-ubicacion .campo-codigo-postal input {
-            text-align:center;
-            letter-spacing: 1px;
-        }
-        .campo-ubicacion .campo-zona {
-            flex: 1 1 auto;
-            display:flex;
-        }
-        .campo-ubicacion .campo-zona select,
-        .campo-ubicacion .campo-codigo-postal input { flex:1 1 auto; width:100%; }
-
-        .row-identificacion .campo-fecha-registro {
-            flex: 0 0 145px;
-            max-width: 145px;
-            display:flex;
-            align-items:center;
-            gap:6px;
-        }
-        .row-identificacion .campo-fecha-registro .input-fecha-registro {
-            flex: 1 1 auto;
-            min-width: 100px;
-            text-align: center;
-            font-size: 0.90rem;
-            padding: 6px;
-        }
-        .row-identificacion .campo-fecha-registro .btn-date {
-            min-width: 30px;
-            padding: 5px;
-            background:#eee;
-            border:1px solid #ccc;
-            border-radius:6px;
-            cursor:pointer;
-        }
-        .row-identificacion .campo-fecha-registro .btn-date:hover { background:#ddd; }
-        #fecha_registro_picker {
-            position:absolute; width:0; height:0; opacity:0; border:0; padding:0; pointer-events:none;
-        }
-
-        .row-identificacion .campo-especie,
-        .row-identificacion .campo-raza,
-        .row-identificacion .campo-sexo {
-            flex: 0 1 145px;
-            min-width: 130px;
-            display:flex;
-        }
-        .row-identificacion .campo-sexo { flex: 0 1 120px; min-width: 115px; }
-        .row-identificacion .campo-especie input,
-        .row-identificacion .campo-raza input,
-        .row-identificacion .campo-sexo select { flex:1 1 auto; }
-
-        .row-caracteristicas { flex-wrap: nowrap; }
-        .row-caracteristicas input,
-        .row-caracteristicas select { flex:1 1 130px; min-width:115px; }
-
-        textarea[name="descripcion"] {
-            height: 36px;
-            min-height: 36px;
-            max-height: 36px;
-            resize: vertical;
-            overflow-y: auto;
-        }
-
-        .foto-uploader { border:1px solid #ccc; border-radius:10px; padding:8px; margin-top:6px; background:#f9f9f9; }
-        .foto-uploader-line { display:flex; align-items:center; gap:6px; flex-wrap: nowrap; }
-        .label-foto { font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
-        .inline-group {
-            display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;
-        }
-        .inline-group select { flex: 0 0 190px; height: 25px; padding: 2px 8px; font-size: 0.88rem; line-height: 1.10; }
-        .inline-group input[type="file"] {
-            flex: 1 1 260px; min-width: 220px; max-width: 340px;
-            height: 25px; font-size: 0.88rem; line-height: 1.10; padding: 2px 6px;
-        }
-
-        .btn-add-foto {
-            background:#4CAF50;
-            color:#fff;
-            border:none;
-            padding:2px 6px;
-            border-radius:5px;
-            cursor:pointer;
-            flex:0 0 auto;
-            font-size: 0.72rem;
-            line-height: 1.05;
-            min-width: 0;
-            white-space: nowrap;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            width: auto !important;
-            flex-shrink:0;
-        }
-        .btn-add-foto:hover { background:#45a049; }
-
-        .foto-lista { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; padding:0; }
-        .foto-item {
-            list-style:none;
-            background:#eef;
-            border-radius:10px;
-            min-width:110px;
-            max-width:140px;
-            flex:0 0 120px;
-            text-align:center;
-            box-shadow:0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: visible;
-        }
-        .foto-item figure { margin:0; display:flex; flex-direction:column; height:100%; }
-        .foto-item img { width:100%; height:100px; object-fit:cover; display:block; }
-        .foto-item figcaption { padding:4px 6px; font-size:0.82rem; font-weight:600; background:#dbe2ff; color:#2c3e50; text-transform:capitalize; }
-        .foto-item:hover { box-shadow:0 3px 8px rgba(0,0,0,0.18); }
-        .foto-item-vacio { background:none; box-shadow:none; cursor:default; min-width:220px; }
-
-        #btn-crear { margin-top: 6px; }
-        body, input, select, button, textarea { line-height: 1.20; }
-
-        input[placeholder*="(*)"]::placeholder,
-        textarea[placeholder*="(*)"]::placeholder,
-        input[required]::placeholder,
-        textarea[required]::placeholder {
-            font-weight: 700;
-            color: #333;
-            opacity: 1;
-        }
-
-        select:required:invalid { font-weight: 700; color: #333; }
-        select:required:not(:invalid) { font-weight: 400; }
-        select option[value=""] { font-weight: 700; }
-
-        @media (max-width: 980px) {
-            .row-identificacion,
-            .row-caracteristicas,
-            .foto-uploader-line,
-            .inline-group { flex-wrap: wrap; }
-            .campo-ubicacion { flex-wrap: wrap; }
-            .campo-ubicacion .campo-codigo-postal { flex: 1 1 120px; }
-            .label-foto { margin-bottom: 2px; }
-        }
-
-        body.layout-crear .header-bar h1 { font-weight: 600; }
-        body.layout-crear input[placeholder*="(*)"]::placeholder,
-        body.layout-crear textarea[placeholder*="(*)"]::placeholder,
-        body.layout-crear input[required]::placeholder,
-        body.layout-crear textarea[required]::placeholder { font-weight: 500; }
-        body.layout-crear select:required:invalid { font-weight: 500; }
-        body.layout-crear select option[value=""] { font-weight: 500; }
-        body.layout-crear .flash { font-weight: 500; }
-        body.layout-crear .label-foto { font-weight: 500; }
-        body.layout-crear .foto-item figcaption { font-weight: 500; }
-        body.layout-crear strong,
-        body.layout-crear b { font-weight: 600; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='17') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 {% set modo = modo or 'crear' %}
 {% set tipo_registro = (tipo_registro or 'desaparecida')|lower %}
 <body class="layout-crear" data-tipo_registro="{{ tipo_registro }}" data-modo="{{ modo }}">
+
 <div class="container">
     <header class="header-bar">
         <h1>
@@ -340,25 +125,25 @@
                 </div>
 
                 <div class="campo-fecha-registro">
-                    <input type="text"
-                           id="fecha_registro"
-                           name="fecha_registro"
-                           class="input-fecha-registro"
-                           placeholder="Fecha (*)"
-                           maxlength="10"
-                           pattern="\d{2}\/\d{2}\/\d{4}"
-                           title="Formato requerido: dd/mm/aaaa"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           value="{{ mascota.fecha_registro.strftime('%d/%m/%Y') if mascota and mascota.fecha_registro else '' }}"
-                           required>
-                    <button type="button"
-                            class="btn-date"
-                            id="btn_fecha_registro_picker"
-                            title="Seleccionar con calendario">
-                        <span aria-hidden="true">📅</span>
-                    </button>
-                    <input type="date" id="fecha_registro_picker" aria-hidden="true" tabindex="-1">
+                <input type="text"
+                        id="fecha_registro"
+                        name="fecha_registro"
+                        class="input-fecha-registro"
+                        placeholder="Fecha (*)"
+                        maxlength="10"
+                        pattern="\d{2}\/\d{2}\/\d{4}"
+                        title="Formato requerido: dd/mm/aaaa"
+                        inputmode="text"
+                        autocomplete="off"
+                        value="{{ mascota.fecha_registro.strftime('%d/%m/%Y') if mascota and mascota.fecha_registro else '' }}"
+                        required>
+                <button type="button"
+                        class="btn-date"
+                        id="btn_fecha_registro_picker"
+                        title="Seleccionar con calendario">
+                    <span aria-hidden="true">📅</span>
+                </button>
+                <input type="date" id="fecha_registro_picker" aria-hidden="true" tabindex="-1">
                 </div>
 
                 <div class="campo-especie">
@@ -430,9 +215,10 @@
 
             <!-- Fila 4 -->
             <div class="row-compact">
-                <textarea name="descripcion"
-                          rows="1"
-                          placeholder="Descripción de mascota, carácter, particularidades">{{ mascota.descripcion if mascota and mascota.descripcion else '' }}</textarea>
+                <textarea id="descripcion"
+                        name="descripcion"
+                        rows="1"
+                        placeholder="Descripción de mascota, carácter, particularidades. EJEMPLO : perra miedosa, con alergias, que se escapo en el campo y lleva un arnes rojo">{{ mascota.descripcion if mascota and mascota.descripcion else '' }}</textarea>
             </div>
 
             <div class="foto-uploader">
@@ -490,6 +276,20 @@
     let fotoSecuencia = 0;
 
     const fechaInputRegistro  = document.getElementById("fecha_registro");
+
+    if (fechaInputRegistro) {
+    fechaInputRegistro.addEventListener("input", (e) => {
+        const digits = e.target.value.replace(/\D/g, "").slice(0, 8); // sólo números, máximo 8
+        let formateada = digits;
+        if (digits.length > 4) {
+        formateada = `${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`;
+        } else if (digits.length > 2) {
+        formateada = `${digits.slice(0,2)}/${digits.slice(2)}`;
+        }
+        e.target.value = formateada;
+    });
+    }
+
     const fechaPickerRegistro = document.getElementById("fecha_registro_picker");
     const btnfechaPickerRegistro = document.getElementById("btn_fecha_registro_picker");
     const contenedorEliminar = document.getElementById("fotos_eliminar_container");
