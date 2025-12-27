@@ -10,6 +10,7 @@ from web.models import FotoMascotaDesaparecida  # el modelo de fotos
 
 def main():
     base = os.environ.get("EXTERNAL_BASE_URL", "https://buscarmascotas.com")
+    print (base)
     with app.app_context():
         filas = (
             db.session.query(

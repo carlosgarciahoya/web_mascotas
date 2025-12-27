@@ -175,9 +175,9 @@ def adjuntar_bytes(mensaje, data_bytes: bytes, mime_type: str, nombre_archivo: s
 def descargar_url_local(url_relativa: str, timeout: int = 10) -> tuple[bytes, Optional[str]]:
     """
     Descarga una URL servida por la propia aplicación (por ejemplo, /foto/5).
-    Usa EXTERNAL_BASE_URL si está configurada; de lo contrario, http://127.0.0.1:5000.
+    Usa IG_MEDIA_BASE_URL si está configurada; de lo contrario, http://127.0.0.1:5000.
     """
-    base = current_app.config.get("EXTERNAL_BASE_URL") or "http://127.0.0.1:5000"
+    base = current_app.config.get("IG_MEDIA_BASE_URL") or "http://127.0.0.1:5000"
 
     if url_relativa.startswith(("http://", "https://")):
         url_completa = url_relativa
