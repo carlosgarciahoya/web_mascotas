@@ -1,9 +1,12 @@
-import base64
+import smtplib
 import urllib.request
 from datetime import date, datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 from typing import Dict, Any, Iterable, Mapping, Optional, Sequence, Tuple, Union
 
-import requests
 from flask import current_app
 
 
@@ -14,24 +17,25 @@ def send_pet_email(
     destinatarios_extra: Optional[Iterable[str]] = None,
 ) -> bool:
     """
-    Envía un correo electrónico con los datos y archivos indicados usando la API de Brevo.
+    Envía un correo electrónico con los datos y archivos indicados.
     """
     cfg = current_app.config
-    # Reutilizamos las variables existentes
-    smtp_user = cfg.get("SMTP_USERNAME")      # Remitente (validado en Brevo)
-    smtp_password = cfg.get("SMTP_PASSWORD")  # Aquí guardas la API key de Brevo
+    smtp_server = cfg.get("SMTP_SERVER")
+    smtp_port = cfg.get("SMTP_PORT", 587)
+    smtp_user = cfg.get("SMTP_USERNAME")
+    smtp_password = cfg.get("SMTP_PASSWORD")
     destino_principal = cfg.get("SMTP_TO_EMAIL")
 
     # Log básico de configuración (sin mostrar la contraseña)
     current_app.logger.info(
-        "[MAIL] Config Brevo: sender=%s to=%s",
-        smtp_user, destino_principal
+        "[MAIL] Config SMTP: server=%s port=%s user=%s to=%s",
+        smtp_server, smtp_port, smtp_user, destino_principal
     )
-    print("[MAIL] Config Brevo:", smtp_user, destino_principal)
+    print("[MAIL] Config SMTP:", smtp_server, smtp_port, smtp_user, destino_principal)
 
-    if not all([smtp_user, smtp_password, destino_principal]):
+    if not all([smtp_server, smtp_port, smtp_user, smtp_password, destino_principal]):
         current_app.logger.error(
-            "Correo no enviado: faltan variables (SMTP_USERNAME / SMTP_PASSWORD / SMTP_TO_EMAIL)."
+            "Correo no enviado: faltan variables SMTP (SERVER/PORT/USERNAME/PASSWORD/TO_EMAIL)."
         )
         return False
 
@@ -58,7 +62,6 @@ def send_pet_email(
         )
         return False
 
-    # Construir el cuerpo de texto plano
     if isinstance(datos, Mapping):
         items = list(datos.items())
     else:
@@ -71,9 +74,14 @@ def send_pet_email(
     cuerpo_lineas.append("Este correo se generó automáticamente desde Web Mascotas.")
     cuerpo = "\n".join(cuerpo_lineas)
 
-    # Preparar adjuntos en base64 para Brevo
+    mensaje = MIMEMultipart()
+    mensaje["From"] = smtp_user
+    mensaje["To"] = ", ".join(destinatarios)
+    mensaje["Subject"] = subject
+    mensaje.attach(MIMEText(cuerpo, "plain", "utf-8"))
+
+    # Adjuntar fotos, mostrando qué se va a hacer
     fotos_lista = list(fotos or [])
-    adjuntos = []
     current_app.logger.info("[MAIL] Nº de fotos a adjuntar: %d", len(fotos_lista))
     print("[MAIL] Nº de fotos a adjuntar:", len(fotos_lista))
 
@@ -82,63 +90,53 @@ def send_pet_email(
         mime_type = foto.get("mime_type") or "application/octet-stream"
         nombre_archivo = foto.get("nombre_archivo") or f"foto_{foto.get('id', 'sin_id')}.jpg"
 
-        if not data_bytes:
-            url_publica = foto.get("url")
-            if url_publica:
-                current_app.logger.info("[MAIL] Descargando foto de: %s", url_publica)
-                try:
-                    data_bytes, _ = descargar_url_local(url_publica)
-                except Exception as exc:  # pylint: disable=broad-except
-                    current_app.logger.warning(
-                        "No se pudo descargar la foto %s para adjunto: %s",
-                        url_publica,
-                        exc,
-                    )
-                    data_bytes = None
-            else:
+        if data_bytes:
+            current_app.logger.info("[MAIL] Adjuntando foto en memoria: %s", nombre_archivo)
+            adjuntar_bytes(mensaje, data_bytes, mime_type, nombre_archivo)
+            continue
+
+        url_publica = foto.get("url")
+        if url_publica:
+            current_app.logger.info("[MAIL] Descargando foto de: %s", url_publica)
+            try:
+                data_bytes, mime_descargado = descargar_url_local(url_publica)
+                adjuntar_bytes(
+                    mensaje,
+                    data_bytes,
+                    mime_descargado or mime_type,
+                    nombre_archivo,
+                )
+                continue
+            except Exception as exc:  # pylint: disable=broad-except
                 current_app.logger.warning(
-                    "Foto sin datos adjuntables (id=%s). No se incluye en el correo.",
-                    foto.get("id"),
+                    "No se pudo descargar la foto %s para adjunto: %s",
+                    url_publica,
+                    exc,
                 )
 
-        if data_bytes:
-            content_b64 = base64.b64encode(data_bytes).decode("ascii")
-            adjuntos.append({
-                "name": nombre_archivo,
-                "content": content_b64,
-            })
+        current_app.logger.warning(
+            "Foto sin datos adjuntables (id=%s). No se incluye en el correo.",
+            foto.get("id"),
+        )
 
-    # Construir el payload para la API de Brevo
-    payload = {
-        "sender": {"email": smtp_user, "name": "buscarmascotas.com"},
-        "to": [{"email": d} for d in destinatarios],
-        "subject": subject,
-        "textContent": cuerpo,
-    }
-    if adjuntos:
-        payload["attachment"] = adjuntos
-
-    headers = {
-        "api-key": smtp_password,
-        "Content-Type": "application/json",
-    }
-
-    # Enviar el correo por HTTPS a Brevo
+    # Enviar el correo
     try:
-        current_app.logger.info("[MAIL] Enviando a Brevo API, destinatarios=%s", destinatarios)
-        print("[MAIL] Enviando a Brevo API...")
-        resp = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            json=payload,
-            headers=headers,
-            timeout=30,
-        )
-        resp.raise_for_status()
         current_app.logger.info(
-            "Correo enviado correctamente vía Brevo: %s -> %s",
-            subject, ", ".join(destinatarios)
+            "[MAIL] Conectando a SMTP %s:%s con timeout %s",
+            smtp_server, smtp_port, 10
         )
-        print("[MAIL] Correo enviado OK vía Brevo")
+        print(f"[MAIL] Conectando a SMTP {smtp_server}:{smtp_port} timeout=30")
+        servidor = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
+        try:
+            servidor.starttls()
+            servidor.login(smtp_user, smtp_password)
+            servidor.sendmail(smtp_user, destinatarios, mensaje.as_string())
+        finally:
+            servidor.quit()
+        current_app.logger.info(
+            "Correo enviado correctamente: %s -> %s", subject, ", ".join(destinatarios)
+        )
+        print("[MAIL] Correo enviado OK")
         return True
     except Exception as exc:  # pylint: disable=broad-except
         current_app.logger.exception("Error al enviar correo (%s): %s", subject, exc)
@@ -154,6 +152,22 @@ def formatear_valor(valor) -> str:
     if isinstance(valor, date):
         return valor.strftime("%d/%m/%Y")
     return str(valor)
+
+
+def adjuntar_bytes(mensaje, data_bytes: bytes, mime_type: str, nombre_archivo: str):
+    if "/" in mime_type:
+        tipo, subtipo = mime_type.split("/", 1)
+    else:
+        tipo, subtipo = "application", "octet-stream"
+
+    parte = MIMEBase(tipo, subtipo)
+    parte.set_payload(data_bytes)
+    encoders.encode_base64(parte)
+    parte.add_header(
+        "Content-Disposition",
+        f'attachment; filename="{nombre_archivo}"'
+    )
+    mensaje.attach(parte)
 
 
 def descargar_url_local(url_relativa: str, timeout: int = 30) -> tuple[bytes, Optional[str]]:
