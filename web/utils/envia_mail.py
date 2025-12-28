@@ -18,24 +18,6 @@ def send_pet_email(
 ) -> bool:
     """
     Envía un correo electrónico con los datos y archivos indicados.
-
-    Parámetros
-    ----------
-    subject : str
-        Asunto del correo (por ejemplo: "Mascota desaparecida").
-    datos : dict o secuencia de pares (campo, valor)
-        Información que se insertará como cuerpo del correo.
-    fotos : iterable opcional
-        Colección de diccionarios generados por `_obtener_rutas_fotos`, con
-        campos como `data`, `mime_type`, `nombre_archivo`, `url`, etc.
-    destinatarios_extra : iterable opcional
-        Lista (o cualquier iterable) con direcciones de correo adicionales
-        que se sumarán a las configuradas en la aplicación.
-
-    Devuelve
-    --------
-    bool
-        True si se envió correctamente, False en caso de error.
     """
     cfg = current_app.config
     smtp_server = cfg.get("SMTP_SERVER")
@@ -44,21 +26,20 @@ def send_pet_email(
     smtp_password = cfg.get("SMTP_PASSWORD")
     destino_principal = cfg.get("SMTP_TO_EMAIL")
 
+    # Log básico de configuración (sin mostrar la contraseña)
+    current_app.logger.info(
+        "[MAIL] Config SMTP: server=%s port=%s user=%s to=%s",
+        smtp_server, smtp_port, smtp_user, destino_principal
+    )
+    print("[MAIL] Config SMTP:", smtp_server, smtp_port, smtp_user, destino_principal)
+
     if not all([smtp_server, smtp_port, smtp_user, smtp_password, destino_principal]):
-        print(
-            "variables -->>",
-            "smtp_server = ",
-            smtp_server,
-            smtp_port,
-            smtp_user,
-            smtp_password,
-            destino_principal,
-        )
         current_app.logger.error(
             "Correo no enviado: faltan variables SMTP (SERVER/PORT/USERNAME/PASSWORD/TO_EMAIL)."
         )
         return False
 
+    # Construir lista de destinatarios
     destinatarios = [
         correo.strip() for correo in str(destino_principal).split(",") if correo.strip()
     ]
@@ -71,6 +52,9 @@ def send_pet_email(
             correo_norm = str(correo).strip()
             if correo_norm and correo_norm not in destinatarios:
                 destinatarios.append(correo_norm)
+
+    current_app.logger.info("[MAIL] Destinatarios finales: %s", destinatarios)
+    print("[MAIL] Destinatarios finales:", destinatarios)
 
     if not destinatarios:
         current_app.logger.error(
@@ -96,17 +80,24 @@ def send_pet_email(
     mensaje["Subject"] = subject
     mensaje.attach(MIMEText(cuerpo, "plain", "utf-8"))
 
-    for foto in fotos or []:
+    # Adjuntar fotos, mostrando qué se va a hacer
+    fotos_lista = list(fotos or [])
+    current_app.logger.info("[MAIL] Nº de fotos a adjuntar: %d", len(fotos_lista))
+    print("[MAIL] Nº de fotos a adjuntar:", len(fotos_lista))
+
+    for foto in fotos_lista:
         data_bytes = foto.get("data")
         mime_type = foto.get("mime_type") or "application/octet-stream"
         nombre_archivo = foto.get("nombre_archivo") or f"foto_{foto.get('id', 'sin_id')}.jpg"
 
         if data_bytes:
+            current_app.logger.info("[MAIL] Adjuntando foto en memoria: %s", nombre_archivo)
             adjuntar_bytes(mensaje, data_bytes, mime_type, nombre_archivo)
             continue
 
         url_publica = foto.get("url")
         if url_publica:
+            current_app.logger.info("[MAIL] Descargando foto de: %s", url_publica)
             try:
                 data_bytes, mime_descargado = descargar_url_local(url_publica)
                 adjuntar_bytes(
@@ -128,9 +119,14 @@ def send_pet_email(
             foto.get("id"),
         )
 
+    # Enviar el correo
     try:
+        current_app.logger.info(
+            "[MAIL] Conectando a SMTP %s:%s con timeout %s",
+            smtp_server, smtp_port, 10
+        )
+        print(f"[MAIL] Conectando a SMTP {smtp_server}:{smtp_port} timeout=10")
         servidor = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
-        print("destimnatarios = ", destinatarios)
         try:
             servidor.starttls()
             servidor.login(smtp_user, smtp_password)
@@ -140,9 +136,11 @@ def send_pet_email(
         current_app.logger.info(
             "Correo enviado correctamente: %s -> %s", subject, ", ".join(destinatarios)
         )
+        print("[MAIL] Correo enviado OK")
         return True
     except Exception as exc:  # pylint: disable=broad-except
         current_app.logger.exception("Error al enviar correo (%s): %s", subject, exc)
+        print("[MAIL] Error al enviar correo:", exc)
         return False
 
 
@@ -183,6 +181,9 @@ def descargar_url_local(url_relativa: str, timeout: int = 10) -> tuple[bytes, Op
         url_completa = url_relativa
     else:
         url_completa = base.rstrip("/") + (url_relativa if url_relativa.startswith("/") else f"/{url_relativa}")
+
+    current_app.logger.info("[MAIL] Descargando URL completa: %s", url_completa)
+    print("[MAIL] Descargando URL completa:", url_completa)
 
     with urllib.request.urlopen(url_completa, timeout=timeout) as resp:
         data = resp.read()
