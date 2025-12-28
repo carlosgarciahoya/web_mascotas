@@ -125,8 +125,8 @@ def send_pet_email(
             "[MAIL] Conectando a SMTP %s:%s con timeout %s",
             smtp_server, smtp_port, 10
         )
-        print(f"[MAIL] Conectando a SMTP {smtp_server}:{smtp_port} timeout=10")
-        servidor = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+        print(f"[MAIL] Conectando a SMTP {smtp_server}:{smtp_port} timeout=30")
+        servidor = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
         try:
             servidor.starttls()
             servidor.login(smtp_user, smtp_password)
@@ -170,7 +170,7 @@ def adjuntar_bytes(mensaje, data_bytes: bytes, mime_type: str, nombre_archivo: s
     mensaje.attach(parte)
 
 
-def descargar_url_local(url_relativa: str, timeout: int = 10) -> tuple[bytes, Optional[str]]:
+def descargar_url_local(url_relativa: str, timeout: int = 30) -> tuple[bytes, Optional[str]]:
     """
     Descarga una URL servida por la propia aplicación (por ejemplo, /foto/5).
     Usa IG_MEDIA_BASE_URL si está configurada; de lo contrario, http://127.0.0.1:5000.
