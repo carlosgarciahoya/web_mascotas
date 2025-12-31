@@ -2,8 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Ajuste para que el móvil use bien el ancho de pantalla -->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Web Mascotas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,14 +57,11 @@
         .hero h2 { margin: 0 0 8px; font-size: 1.3rem; }
 
         .hero p {
-            margin: 0 0 12px 5px;
-            color: #0b1f3b;
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-        /* Por defecto, el texto específico para móvil no se muestra */
-        .texto-hero-movil { display: none; }
-
+        margin: 0 0 12px 5px;
+        color: #0b1f3b;
+        font-size: 1.3rem;
+        font-weight: 600;
+                }
         .hero-actions {
             display: flex;
             gap: 30px;
@@ -93,7 +88,7 @@
 
             transition: background-color 0.2s ease, transform 0.1s ease;
         }
-
+                  
         .hero-image {
             flex: 0 0 180px;      /* la foto ocupa menos ancho */
             display: flex;
@@ -181,22 +176,8 @@
         @media (max-width: 900px) {
             .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        /* Ajustes finos en móvil (máx. 600px) */
         @media (max-width: 600px) {
-            /* Rejilla en dos columnas en móvil */
-            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            /* Título principal un 90% más pequeño para que no se parta tanto */
-            header h1 { font-size: 1.44rem; }
-            /* Reducir espacios verticales en el texto de difusión */
-            .hero h2 { margin: 0; line-height: 1.2; }
-            .hero p { margin: 2px 0 10px 5px; line-height: 0.9; color: #555; }
-            /* Ocultar la imagen en móvil para ganar espacio */
-            .hero-image { display: none; }
-            /* Mostrar solo el texto pensado para móvil */
-            .texto-hero-desktop { display: none; }
-            .texto-hero-movil { display: block; }
-            /* Texto de los 3 botones un 10% más grande */
-            .hero-actions a { font-size: 1.43rem; }
+            .grid { grid-template-columns: 1fr; }
         }
         .card-link {
             display: flex;
@@ -219,8 +200,8 @@
             box-shadow: 0 14px 32px rgba(0,0,0,0.12);
         }
         .card-link .emoji {
-            font-size: 1.6rem;
-            margin-bottom: 1px;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
             display: block;
         }
         .card-link h3 {
@@ -265,10 +246,7 @@
                 <a href="https://www.instagram.com/webmascotasdesaparecidas" target="_blank">Instagram</a>,
                 <a href="https://www.facebook.com/busca.mascotas.perdidas/" target="_blank">Facebook</a>,
                 e-mail, WhatsApp, Telegram</h2>
-            <!-- Texto para escritorio -->
-            <p class="texto-hero-desktop">Encuentra y reúne mascotas con sus familias: Publica, busca, compara fotos con IA, busca raza con IA.</p>
-            <!-- Texto alternativo para móvil: cámbialo aquí -->
-            <p class="texto-hero-movil">  🧠 compara fotos con IA, busca raza con IA</p>
+            <p>Encuentra y reúne mascotas con sus familias: Publica, busca, compara fotos con IA, busca raza con IA.</p>
             <div class="hero-actions">
                 <a class="btn-primary" href="{{ url_for('main.crear_mascota') }}?tipo_registro=desaparecida">😢 He perdido una mascota</a>
                 <a class="btn-secondary" href="{{ url_for('main.crear_mascota') }}?tipo_registro=encontrada">😊 He encontrado una mascota</a>
@@ -293,7 +271,7 @@
         </a>
         <a class="card-link" href="{{ url_for('main.buscar_mascotas') }}">
             <div class="emoji">🔎</div>
-            <h3>Buscar mascotas registradas </h3>
+            <h3>Buscar mascotas desaparecidas/encontradas (vistas)</h3>
             <p>Explora anuncios activos por zona, fecha o coincidencias.</p>
         </a>
         <a class="card-link" href="{{ url_for('main.modificar_mascotas') }}">
