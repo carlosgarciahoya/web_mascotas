@@ -263,9 +263,7 @@ footer {
     font-size: 0.93rem;
 }
 
-/* Ajustes responsivos  TODO ESTO ES PARA EL MOVIL  portada WEB  */
-/*    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
-
+/* Ajustes responsivos */
 @media (max-width: 900px) {
     .mascota-info-grid {
         grid-template-columns: repeat(2, minmax(180px, 1fr));
@@ -498,7 +496,7 @@ body.layout-crear .row-identificacion .campo-sexo select { flex:1 1 auto; }
 /* Características */
 body.layout-crear .row-caracteristicas { flex-wrap: nowrap; }
 body.layout-crear .row-caracteristicas input,
-body.layout-crear .row-caracteristicas select { flex:1 1 120px; min-width:110px; }
+body.layout-crear .row-caracteristicas select { flex:1 1 130px; min-width:115px; }
 
 /* Hacer Edad y Peso más estrechos, pero que quepan varios dígitos */
 body.layout-crear .row-caracteristicas #edad,
@@ -506,7 +504,6 @@ body.layout-crear .row-caracteristicas input[name="peso"] {
   flex: 0 0 auto;   /* que no se estiren */
   width: 100px;      /* prueba con 60px o 6ch si prefieres */
   min-width: 100px;
-  border-radius: 5px;
 }
 
 body.layout-crear .row-caracteristicas .campo-ubicacion {
@@ -525,7 +522,7 @@ body.layout-crear .campo-ubicacion .campo-codigo-postal input {
 }
 body.layout-crear .campo-ubicacion .campo-zona {
     flex: 1 1 auto;
-    max-width: 900px;
+    max-width: 700px;
     display:flex;
 }
 body.layout-crear .campo-ubicacion .campo-zona select,
@@ -631,7 +628,7 @@ body.layout-crear .foto-item:hover { box-shadow:0 3px 8px rgba(0,0,0,0.18); }
 body.layout-crear .foto-item-vacio { background:none; box-shadow:none; cursor:default; min-width:220px; }
 
 /* Botón submit */
-body.layout-crear #btn-crear { margin-top: 6px;  min-height: 50px; font-size: 24px;}
+body.layout-crear #btn-crear { margin-top: 6px; }
 
 /* Placeholders y selects obligatorios */
 body.layout-crear input[placeholder*="(*)"]::placeholder,
@@ -653,14 +650,10 @@ body.layout-crear #zona option[value=""] { font-weight: 700; }
 body.layout-crear #zona[disabled],
 body.layout-crear #zona:required:invalid { font-weight: 700; }
 
-
-/* ******************************************************  para el movil  CREAR  ********************* */
-/*    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
-
 @media (max-width: 900px) {
   /* Cabecera y botón volver */
   body.layout-crear .header-bar {
-    padding: 2px;
+    padding: 10px;
     text-align: center;
   }
   body.layout-crear .header-bar h1 {
@@ -681,9 +674,9 @@ body.layout-crear #zona:required:invalid { font-weight: 700; }
   body.layout-crear form select,
   body.layout-crear form textarea {
     background: #e0f7ff;
-    font-size: 20px;
+    font-size: 16px;
     line-height: 1.2;
-    padding: 2px 2px;
+    padding: 12px 14px;
     height: auto;
     min-height: 60px;
     margin: 6px 0;
@@ -693,7 +686,8 @@ body.layout-crear #zona:required:invalid { font-weight: 700; }
   body.layout-crear form,
   body.layout-crear form > div,
   body.layout-crear form .row-compact,
-  body.layout-crear form .row-contacto {
+  body.layout-crear form .row-contacto,
+  body.layout-crear form .foto-uploader {
     display: block;
     margin: 0 0 8px 0;
     padding: 0;
@@ -716,75 +710,26 @@ body.layout-crear #zona:required:invalid { font-weight: 700; }
     min-width: 0;
   }
 
-  /* Contenedor de fotos: fondo verde y filas apiladas */
-  body.layout-crear .foto-uploader {
-    display: grid;
-    grid-template-columns: 1fr; /* una sola columna, una fila debajo de otra */
-    gap: 12px;
-    padding: 12px;
-    border-radius: 6px;
-    background: #d2f8dd;
-  }
-
-  /* Fila del título y los controles */
+  /* Fotos: el texto va en su propia línea y sin partirse */
   body.layout-crear .foto-uploader-line {
-    display: block; /* todo en vertical */
-    padding: 10px;
-  }
-  /* El título ocupa toda la fila */
-  body.layout-crear .foto-uploader-line .label-foto {
-    text-align: center;
-    font-size: 1.4rem;
-    font-weight: bold;
-    white-space: nowrap;
-    margin-bottom: 8px;
-  }
-  /* Cada control en su propia línea con las medidas indicadas */
-  body.layout-crear .inline-group {
     display: block;
   }
-  body.layout-crear .inline-group select,
-  body.layout-crear .inline-group input[type="file"] {
+  body.layout-crear .foto-uploader label {
+    display: block;
     width: 100%;
-    font-size: 20px;
-    height: auto !important;
-    background: #e0f7ff !important;
-    margin: 6px 0;
-    border-radius: 5px;
-    box-sizing: border-box;
+    white-space: nowrap;
+    margin: 8px 0 4px 0;
+    font-size: 15px;
   }
-  /* Archivo: más alto y con botón agrandado */
-  body.layout-crear .inline-group input[type="file"] {
-    min-height: 50px;
-    padding: 2px 2px;
+  body.layout-crear .inline-group {
+    display: block;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
   }
-  body.layout-crear .inline-group input[type="file"]::file-selector-button,
-  body.layout-crear .inline-group input[type="file"]::-webkit-file-upload-button {
-    padding: 2px 2px;
-    font-size: 20px;
-    height: 100%;
-  }
-
-  /* Texto con el nombre del archivo en su propia fila */
-  body.layout-crear .foto-uploader .file-info {
-    grid-column: 1 / -1;
-    padding: 2px 2px;
-    font-size: 14px;
-  }
-
-  /* El botón de añadir foto en su propia fila, ancho completo */
-  body.layout-crear .btn-add-foto {
-    grid-column: 1 / -1;
-    padding: 2px 2px;
-    text-align: center;
-    min-height: 40px;
-    font-size: 20px;
-    width: 100% !important;
-  }
-
-  /* La lista de fotos también ocupa toda la fila */
-  body.layout-crear .foto-lista {
-    grid-column: 1 / -1;
+  body.layout-crear .inline-group > * {
+    width: 100%;
+    margin: 6px 0 0 0;
   }
 
   /* Contenedor principal más compacto */
@@ -795,6 +740,7 @@ body.layout-crear #zona:required:invalid { font-weight: 700; }
   }
 
   /* Rejilla de dos columnas en móvil */
+  /* Identificación en dos columnas */
   body.layout-crear form .row-identificacion {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -805,150 +751,26 @@ body.layout-crear #zona:required:invalid { font-weight: 700; }
     width: 100% !important;
   }
 
-  /* Fila 3: dos columnas , aunque .row-compact la pinte de blanco */
-  body.layout-crear .row-compact.row-caracteristicas {
+  /* Características en dos columnas */
+  body.layout-crear form .row-caracteristicas {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2px;
-    padding: 12px;
-    border-radius: 6px;
-    background: #d2f8dd !important;
-  }
-  /* Fila 3: fondo azul */
-  body.layout-crear .row-compact.row-caracteristicas > * {
-    min-width: 0 !important;
-    width: 100% !important;
-    background: #e0f7ff !important;
-    font-size: 20px;
-    line-height: 1.1;
-    height: auto;
-    min-height: 60px;
-    margin: 6px 0;
-  }
-  /* Fila 3: inputs y selects más altos */
-  body.layout-crear form .row-compact.row-caracteristicas input,
-  body.layout-crear form .row-compact.row-caracteristicas select {
-    min-height: 120px;
-    padding: 10px 8px;
-    font-size: 20px;
-    border: 1px solid #025328;
-    border-radius: 8px;
-  }
-
-  /* El bloque código postal + zona ocupa las dos columnas */
-  body.layout-crear .row-compact.row-caracteristicas .campo-ubicacion {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 3fr 7fr;
-    gap: 20px;
-  }
-  /* Deja que los dos subcampos se ajusten al espacio */
-  body.layout-crear .row-compact.row-caracteristicas .campo-ubicacion .campo-codigo-postal,
-  body.layout-crear .row-compact.row-caracteristicas .campo-ubicacion .campo-zona {
-    min-width: 0;
-  }
-  body.layout-crear .row-compact.row-caracteristicas .campo-ubicacion .campo-codigo-postal input,
-  body.layout-crear .row-compact.row-caracteristicas .campo-ubicacion .campo-zona select {
-    width: 100%;
-    background: #e0f7ff !important;
-    font-size: 17px;
-    border: 1px solid #01140a;
-    border-radius: 8px;
-  }
-
-  /* Fecha y botón más altos en la fila 3 */
-  body.layout-crear .row-compact.row-caracteristicas .campo-fecha-registro {
-    grid-column: 1 / -1;
-    display: grid !important;
-    grid-template-columns: 1fr auto;
     gap: 8px;
   }
-  body.layout-crear .row-compact.row-caracteristicas .campo-fecha-registro .input-fecha-registro {
-    min-height: 60px;
-    padding: 2px 2px;
-    font-size: 20px;
-    height: auto !important;
-    background: #e0f7ff !important;
-  }
-  body.layout-crear .row-compact.row-caracteristicas .campo-fecha-registro .btn-date {
-    min-height: 60px;
-    padding: 2px 2px;
-    font-size: 25px;
-    height: auto !important;
-    background: #e0f7ff !important;
-    border: 1px solid #000;
-    border-radius: 5px;
+  body.layout-crear form .row-caracteristicas > * {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
- }
-/* ******************************************************
-   Ajustes móviles para buscar
-   ****************************************************** */
-@media (max-width: 900px) {
-  /* Contenedor del buscador: ancho completo, fondo verde y esquinas redondeadas */
-  body .container {
-    width: 100%;
-    padding: 12px;
-    margin: 0 auto;
-    background: #d2f8dd;
-    border-radius: 8px;
-    box-shadow: none;
-  }
-
-  /* Cabecera más compacta y botón volver a toda la anchura */
-  body .header-bar {
-    padding: 6px 8px;
-    text-align: center;
-  }
-  body .header-bar h1 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
-  body .btn-volver {
-    display: block;
-    position: static;
-    transform: none;
-    width: 100%;
-    margin: 8px 0 12px 0;
-    text-align: center;
-  }
-
-  /* Cada fila de filtros en 2 columnas al 50 % */
-  body form .form-row {
-    display: grid;
+  /* Código postal y localidad también al 50 % dentro de su bloque */
+  body.layout-crear form .campo-ubicacion {
+    display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 10px;
-    padding: 0;
+    gap: 8px;
+    width: 100%;
   }
-
-  /* Campos y botón: fondo azul, más altos y letras más grandes */
-  body form .form-row input,
-  body form .form-row select,
-  body form .form-row button {
+  body.layout-crear form .campo-ubicacion > * {
+    min-width: 0 !important;
     width: 100% !important;
-    background: #e0f7ff;
-    font-size: 18px;
-    line-height: 1.2;
-    padding: 12px 14px;
-    min-height: 60px;
-    height: auto;
-    margin: 6px 0;
-    border-radius: 6px;
-    box-sizing: border-box;
-  }
-
-  /* Selector de tipo, email y descripción a toda la línea */
-  body form .form-row select[name="tipo_registro"],
-  body form .form-row input[name="propietario_email"],
-  body form .form-row input[name="descripcion"] {
-    grid-column: 1 / -1;
-  }
-
-  /* Forzar que el botón de buscar ocupe toda la línea */
-  body form .btn-buscar {
-    grid-column: 1 / -1;
-    width: 100% !important;
-    text-align: center;
   }
 }

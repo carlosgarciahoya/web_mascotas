@@ -7,7 +7,7 @@ import os
 
 # 📌 Le decimos explícitamente a Flask dónde buscar templates y static
 app = Flask(
-    __name__,
+    __name__,   
     template_folder=os.path.join(os.path.dirname(__file__), "web", "templates"),
     static_folder=os.path.join(os.path.dirname(__file__), "web", "static")
 )

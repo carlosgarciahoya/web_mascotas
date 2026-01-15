@@ -4,68 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if modo == 'modificar' %}Editar Mascota{% else %}Crear Mascota{% endif %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='17') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-
-    <head>
-            <!-- Colores y ajustes de ancho/alto para depurar -->
-        <style>
-        /* Fondo general de la página */
-        body.layout-crear { background: #f7f6f4; }
-
-        /* Contenedor azul: ocupa todo el ancho con relleno a los lados */
-        body.layout-crear .container {
-          
-            width: 100vw !important;
-            max-width: 100vw !important;
-            margin-left: calc(50% - 50vw);
-            margin-right: calc(50% - 50vw);
-            padding-left: 16px;
-            padding-right: 16px;
-            box-sizing: border-box;
-        }
-
-        /* Bloque verde (main): todo el ancho del contenedor y más alto */
-        body.layout-crear main {
-            background: #dffcdf;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 2px 0;
-            min-height: auto;
-            /* min-height: calc(100vh - 120px);  ajusta 120px si hace falta */
-            box-sizing: border-box;
-        }
-
-        /* Formulario crema: ancho completo y relleno interior */
-        body.layout-crear #form-crear {
-           
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 16px;
-            box-sizing: border-box;
-        }
-
-        /* Filas en rosa para distinguirlas */
-        body.layout-crear .row-compact {
-            background: #ffffff;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-
-
-        body.layout-crear #descripcion {
-            height: auto !important;   /* quita cualquier altura fija */
-            min-height: 4.5em;         /* ajusta este número: 4.5em son ~3 líneas */
-            resize: vertical;          /* permite estirarlo hacia abajo si quieres */
-            box-sizing: border-box;
-        }
-
-        </style>
-
-    </head>
-       
 </head>
 {% set modo = modo or 'crear' %}
 {% set tipo_registro = (tipo_registro or 'desaparecida')|lower %}
@@ -102,65 +42,109 @@
             <div id="fotos_eliminar_container"></div>
 
             <!-- Fila 1 -->
-
             <div class="row-compact row-contacto">
                 {% if tipo_registro == 'encontrada' %}
-                    <input type="email" name="propietario_email"
-                        placeholder="Email persona que lo encontró"
-                        value="{{ mascota.propietario_email if mascota else '' }}" required>
-                {% else %}
-                    <input type="email" name="propietario_email"
-                        placeholder="Email propietario (*)"
-                        value="{{ mascota.propietario_email if mascota else '' }}" required>
-                {% endif %}
-
-                <div class="campo-telefono">
-                    <input type="text" id="telefono" name="propietario_telefono"
-                        placeholder="Telefono (*)" maxlength="20"
-                        value="{{ mascota.propietario_telefono if mascota else '' }}" required>
-                </div>
-
-                <input type="text" name="chip" placeholder="Chip (opcional)"
-                    value="{{ mascota.chip if mascota else '' }}">
-            </div>
-
-            <!-- Fila 2 -->
-            <div class="row-compact row-identificacion">  
-                {% if tipo_registro == 'encontrada' %}
-                <div class="campo-nombre">
+                    <input type="email"
+                           name="propietario_email"
+                           placeholder="Email persona que lo encontró"
+                           value="{{ mascota.propietario_email if mascota else '' }}"
+                           required>
+                    <div class="campo-telefono">
+                        <input type="text"
+                               id="telefono"
+                               name="propietario_telefono"
+                               placeholder="Telefono (*)"
+                               maxlength="20"
+                               value="{{ mascota.propietario_telefono if mascota else '' }}"
+                               required>
+                    </div>
+                    <div class="campo-nombre">
                         <input type="text"
                                id="nombre"
                                value="{{ mascota.nombre if mascota else 'encontrada' }}"
                                placeholder="Nombre mascota"
                                readonly>
-                </div>                
-                <input type="hidden" name="nombre" value="{{ mascota.nombre if mascota else 'encontrada' }}">
-
+                    </div>
+                    <input type="hidden" name="nombre" value="{{ mascota.nombre if mascota else 'encontrada' }}">
                 {% else %}
-                <div class="campo-nombre">
+                    <input type="email"
+                           name="propietario_email"
+                           placeholder="Email propietario (*)"
+                           value="{{ mascota.propietario_email if mascota else '' }}"
+                           required>
+                    <div class="campo-telefono">
+                        <input type="text"
+                               id="telefono"
+                               name="propietario_telefono"
+                               placeholder="Telefono (*)"
+                               maxlength="20"
+                               value="{{ mascota.propietario_telefono if mascota else '' }}"
+                               required>
+                    </div>
+                    <div class="campo-nombre">
                         <input type="text"
                                id="nombre"
                                name="nombre"
                                placeholder="Nombre mascota (*)"
-                               maxlength="50"
+                               maxlength="30"
                                value="{{ mascota.nombre if mascota else '' }}"
                                required>
-                </div>   
+                    </div>
                 {% endif %}
+            </div>
 
-                 <div class="campo-sexo">
-                    <select name="sexo"
-                            {% if tipo_registro == 'desaparecida' %}required{% endif %}>
-                        <option value="" disabled
-                                {% if not mascota or not mascota.sexo %}selected{% endif %}
-                                {% if tipo_registro == 'desaparecida' %}data-obligatorio="1"{% endif %}>
-                            {{ 'Sexo (*)' if tipo_registro == 'desaparecida' else 'Sexo (opcional)' }}
-                        </option>
-                        <option value="macho" {% if mascota and mascota.sexo == 'macho' %}selected{% endif %}>macho</option>
-                        <option value="hembra" {% if mascota and mascota.sexo == 'hembra' %}selected{% endif %}>hembra</option>
-                        <option value="no_sabe" {% if mascota and mascota.sexo == 'no_sabe' %}selected{% endif %}>no sabe</option>
-                    </select>
-                </div>   
+            <!-- Fila 2 -->
+            <div class="row-compact row-identificacion">
+                <div class="campo-ubicacion">
+                    <div class="campo-codigo-postal">
+                        <input type="text"
+                               name="codigo_postal"
+                               id="codigo_postal"
+                               placeholder="C. Postal (*)"
+                               value="{{ mascota.codigo_postal if mascota else '' }}"
+                               maxlength="5"
+                               pattern="\d{5}"
+                               inputmode="numeric"
+                               autocomplete="postal-code"
+                               required>
+                    </div>
+                    <div class="campo-zona">
+                        <select name="zona"
+                                id="zona"
+                                required
+                                data-placeholder="Localidad (*)"
+                                data-zona-inicial="{{ mascota.zona if mascota and mascota.zona else '' }}"
+                                {% if not mascota or not mascota.zona %}disabled{% endif %}>
+                            {% if mascota and mascota.zona %}
+                                <option value="{{ mascota.zona }}">{{ mascota.zona }}</option>
+                            {% else %}
+                                <option value="">Localidad (*)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="campo-fecha-registro">
+                <input type="text"
+                        id="fecha_registro"
+                        name="fecha_registro"
+                        class="input-fecha-registro"
+                        placeholder="Fecha (*)"
+                        maxlength="10"
+                        pattern="\d{2}\/\d{2}\/\d{4}"
+                        title="Formato requerido: dd/mm/aaaa"
+                        inputmode="text"
+                        autocomplete="off"
+                        value="{{ mascota.fecha_registro.strftime('%d/%m/%Y') if mascota and mascota.fecha_registro else '' }}"
+                        required>
+                <button type="button"
+                        class="btn-date"
+                        id="btn_fecha_registro_picker"
+                        title="Seleccionar con calendario">
+                    <span aria-hidden="true">📅</span>
+                </button>
+                <input type="date" id="fecha_registro_picker" aria-hidden="true" tabindex="-1">
+                </div>
 
                 <div class="campo-especie">
                     <input type="text"
@@ -180,13 +164,28 @@
                            {% if tipo_registro == 'desaparecida' %}required{% endif %}>
                 </div>
 
-                                 
+                <div class="campo-sexo">
+                    <select name="sexo"
+                            {% if tipo_registro == 'desaparecida' %}required{% endif %}>
+                        <option value="" disabled
+                                {% if not mascota or not mascota.sexo %}selected{% endif %}
+                                {% if tipo_registro == 'desaparecida' %}data-obligatorio="1"{% endif %}>
+                            {{ 'Sexo (*)' if tipo_registro == 'desaparecida' else 'Sexo (opcional)' }}
+                        </option>
+                        <option value="macho" {% if mascota and mascota.sexo == 'macho' %}selected{% endif %}>macho</option>
+                        <option value="hembra" {% if mascota and mascota.sexo == 'hembra' %}selected{% endif %}>hembra</option>
+                        <option value="no_sabe" {% if mascota and mascota.sexo == 'no_sabe' %}selected{% endif %}>no sabe</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila 3 -->
+            <div class="row-compact row-caracteristicas">
                 <input type="text"
                        name="color"
                        placeholder="Color (*)"
                        value="{{ mascota.color if mascota else '' }}"
                        required>
-                
                 <select name="tamano" required>
                     <option value="" disabled data-obligatorio="1"
                             {% if not mascota or not mascota.tamano %}selected{% endif %}>
@@ -196,84 +195,22 @@
                     <option value="mediano" {% if mascota and mascota.tamano == 'mediano' %}selected{% endif %}>mediano</option>
                     <option value="grande" {% if mascota and mascota.tamano == 'grande' %}selected{% endif %}>grande</option>
                 </select>
-              
-                </div>
-            </div>
-
-            <!-- Fila 3 -->
-            <div class="row-compact row-caracteristicas">
-                 
                 <input type="number"
                        id="edad"
                        name="edad"
                        placeholder="Edad"
                        min="0"
-                       max="99"                       
-                       value="{{ mascota.edad if mascota and mascota.edad is not none else '' }}"
-                       oninput="this.value = this.value.slice(0, 2);">
-                       
+                       value="{{ mascota.edad if mascota and mascota.edad is not none else '' }}">
                 <input type="number"
                        name="peso"
                        placeholder="Peso (kg)"
                        step="0.1"
                        min="0"
-                       max="99"   
-                       value="{{ ('%.2f'|format(mascota.peso)).rstrip('0').rstrip('.') if mascota and mascota.peso is not none else '' }}"
-                       oninput="this.value = this.value.slice(0, 2);">
-                <div class="campo-ubicacion">            
-                    <div class="campo-codigo-postal">
-                        <input type="text"
-                               name="codigo_postal"
-                               id="codigo_postal"
-                               placeholder="C. Postal (*)"
-                               value="{{ mascota.codigo_postal if mascota else '' }}"
-                               maxlength="5"
-                               pattern="\d{5}"
-                               inputmode="numeric"
-                               autocomplete="postal-code"
-                               required>
-                    </div>
-
-
-                    <div class="campo-zona">
-                        <select name="zona"
-                                id="zona"
-                                required
-                                data-placeholder="Localidad (*) donde se perdió o encontró la mascota "
-                                data-zona-inicial="{{ mascota.zona if mascota and mascota.zona else '' }}"
-                                {% if not mascota or not mascota.zona %}disabled{% endif %}>
-                            {% if mascota and mascota.zona %}
-                                <option value="{{ mascota.zona }}">{{ mascota.zona }}</option>
-                            {% else %}
-                                <!-- Solo el placeholder en negrita -->
-                                <option value="" style="font-weight: bold;">Localidad (*) donde se perdió o encontró la mascota</option>
-                            {% endif %}
-                        </select>
-                    </div>                    
-                </div>
-                                    
-                <div class="campo-fecha-registro">
-                    <input type="text"
-                            id="fecha_registro"
-                            name="fecha_registro"
-                            class="input-fecha-registro"
-                            placeholder="Fecha (*) perdida o vista"
-                            maxlength="10"
-                            pattern="\d{2}\/\d{2}\/\d{4}"
-                            title="Formato requerido: dd/mm/aaaa"
-                            inputmode="text"
-                            autocomplete="off"
-                            value="{{ mascota.fecha_registro.strftime('%d/%m/%Y') if mascota and mascota.fecha_registro else '' }}"
-                            required>
-                    <button type="button"
-                            class="btn-date"
-                            id="btn_fecha_registro_picker"
-                            title="Seleccionar con calendario">
-                        <span aria-hidden="true">📅</span>
-                    </button>
-                    <input type="date" id="fecha_registro_picker" aria-hidden="true" tabindex="-1">
-                </div>
-                
+                       value="{{ ('%.2f'|format(mascota.peso)).rstrip('0').rstrip('.') if mascota and mascota.peso is not none else '' }}">
+                <input type="text"
+                       name="chip"
+                       placeholder="Chip (opcional)"
+                       value="{{ mascota.chip if mascota else '' }}">
             </div>
 
             <!-- Fila 4 -->
@@ -281,7 +218,7 @@
                 <textarea id="descripcion"
                         name="descripcion"
                         rows="1"
-                        placeholder="Comentarios : Zona donde se ha perdido, descripcion de la mascota, particularidades.....) Ejemplo : perra miedosa, se escapo en la finca XXX al lado de la carretera XXX , lleva arnes rojo, es alergica....">{{ mascota.descripcion if mascota and mascota.descripcion else '' }}</textarea>
+                        placeholder="Descripción de mascota, carácter, particularidades. EJEMPLO : perra miedosa, con alergias, que se escapo en el campo y lleva un arnes rojo">{{ mascota.descripcion if mascota and mascota.descripcion else '' }}</textarea>
             </div>
 
             <div class="foto-uploader">
@@ -310,13 +247,12 @@
                 {% if modo == 'modificar' %}
                     Guardar cambios
                 {% else %}
-                    {{ 'Crear mascota encontrada' if tipo_registro == 'encontrada' else 'Crear mascota perdida' }}
+                    {{ 'Crear mascota encontrada' if tipo_registro == 'encontrada' else 'Crear mascota' }}
                 {% endif %}
             </button>
         </form>
     </main>
 </div>
-
 
 <script>
     const modoFormulario = document.body.dataset.modo;
