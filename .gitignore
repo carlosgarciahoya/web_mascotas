@@ -1,8 +1,8 @@
 .venv/
 .venv_aux/
 __pycache__/
-~$*.docx
-~$*.pdf
+*.docx
+*.pdf
 web/static/fotos/
 "guardar_claves_openai - copia.bat"
 guardar_claves_openai - copia.bat
