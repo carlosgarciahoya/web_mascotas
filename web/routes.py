@@ -25,6 +25,8 @@ from werkzeug.utils import secure_filename
 from .models import db, Mascota, FotoMascotaDesaparecida as Foto
 from .utils.envia_mail import send_pet_email
 
+from .utils.envia_whatsapp import send_pet_whatsapp
+
 # from .utils.prueba_envio_facebook import send_pet_fb_message
 from .utils.publicar_fb import publish_pet_fb_post
 
@@ -371,6 +373,10 @@ def _cargar_smtp_env(app) -> None:
     app.config["SMTP_PASSWORD"] = os.getenv("SMTP_PASSWORD", "")
     app.config["SMTP_TO_EMAIL"] = os.getenv("SMTP_TO_EMAIL", "")
 
+      # NUEVO: WhatsApp
+    app.config["WHATSAPP_TOKEN"] = os.getenv("WHATSAPP_TOKEN", "")
+    app.config["WHATSAPP_PHONE_NUMBER_ID"] = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+
 
 def _programar_envio_correo(mascota_id: int) -> None:
     try:
@@ -423,6 +429,64 @@ def _worker_enviar_correo(app, mascota_id: int) -> None:
         if not ok_fb_post:
             current_app.logger.error(
                 "Fallo al publicar en el feed de Facebook de la mascota %s", mascota_id
+            )
+        
+
+        # WhatsApp: texto largo con los mismos datos que el mail
+        # Armas un texto legible; si 'datos_email' es dict, recorre sus campos
+        texto_wsp = (
+            f"{subject}\n\n"
+            f"ID: {mascota.id}\n"
+            f"Tipo: {mascota.tipo_registro}\n"
+            f"Nombre: {mascota.nombre or 'N/D'}\n"
+            f"Especie: {mascota.especie or 'N/D'}\n"
+            f"Raza: {mascota.raza or 'N/D'}\n"
+            f"Edad: {mascota.edad or 'N/D'}\n"
+            f"Zona: {(mascota.zona or '').strip()}\n"
+            f"Código postal: {(mascota.codigo_postal or '').strip()}\n"
+            f"Email contacto: {mascota.propietario_email or 'N/D'}\n"
+            f"Teléfono contacto: {mascota.propietario_telefono or 'N/D'}\n"
+            f"Color: {mascota.color or 'N/D'}\n"
+            f"Sexo: {mascota.sexo or 'N/D'}\n"
+            f"Chip: {mascota.chip or 'N/D'}\n"
+            f"Peso: {mascota.peso or 'N/D'}\n"
+            f"Tamaño: {mascota.tamano or 'N/D'}\n"
+            f"Descripción: {mascota.descripcion or 'N/D'}\n"
+            f"Fecha registro: {mascota.fecha_registro or 'N/D'}\n"
+            f"Fecha aparecida: {mascota.fecha_aparecida or 'N/D'}\n"
+            f"Estado aparecida: {mascota.estado_aparecida or 'N/D'}\n"
+        )
+
+        # Prepara la primera foto (si existe) para WhatsApp
+        link_foto = None
+        if fotos_detalle:
+            primera = fotos_detalle[0]
+            link_foto = primera.get("url")
+
+        # Limpias el teléfono y le añades 34 si hace falta
+        telefono = (mascota.propietario_telefono or "").strip()
+        if telefono:
+            telefono = telefono.replace(" ", "").replace("-", "")
+            if not telefono.startswith("34"):
+                numero_destino = "34" + telefono
+            else:
+                numero_destino = telefono
+        else:
+            numero_destino = ""
+
+        # Ahora sí, envías todo ese texto y la foto a WhatsApp
+        ok_wsp = False
+        if numero_destino:
+            ok_wsp = send_pet_whatsapp(numero_destino, texto_wsp, link_foto=link_foto)
+            if not ok_wsp:
+                current_app.logger.error(
+                    "Fallo al enviar WhatsApp de la mascota %s al número %s",
+                    mascota_id, numero_destino
+                )
+        else:
+            current_app.logger.warning(
+                "No se envía WhatsApp: la mascota %s no tiene teléfono.",
+                mascota_id
             )
 
         # NUEVO: publicar en Instagram con nueva variable
@@ -691,13 +755,9 @@ def crear_mascota(mascota_id=None):
 
     if request.method == "POST":
 
-        print("FORM COMPLETO:", request.form.to_dict(flat=False))
-        print("FILES:", [f.filename for f in request.files.getlist('fotos')])
-
-        print("[DBG CREAR] POST recibido:",
-              "args.tipo_registro=", request.args.get("tipo_registro"),
-              "form.tipo_registro=", request.form.get("tipo_registro"))
-
+       # print("FORM COMPLETO:", request.form.to_dict(flat=False))
+       # print("FILES:", [f.filename for f in request.files.getlist('fotos')])
+   
         tipo_registro_form = (request.form.get("tipo_registro") or '').strip().lower()
         if edit_mode and tipo_registro_form in TIPOS_REGISTRO:
             tipo_registro = tipo_registro_form
@@ -731,27 +791,12 @@ def crear_mascota(mascota_id=None):
 
         if tipo_registro == "encontrada" and sexo not in SEXOS:
             sexo = "no_sabe"
-            print("[DBG CREAR] sexo vacío en encontrada -> forzado a 'no_sabe'")
+           # print("[DBG CREAR] sexo vacío en encontrada -> forzado a 'no_sabe'")
 
-        print("[DBG CREAR] Campos crudos:",
-              "nombre=", repr(nombre),
-              "especie=", repr(especie),
-              "raza=", repr(raza),
-              "zona=", repr(zona),
-              "codigo_postal=", repr(codigo_postal),
-              "color=", repr(color),
-              "sexo=", repr(sexo),
-              "tamano=", repr(tamano),
-              "email=", repr(propietario_email),
-              "tel=", repr(propietario_telefono),
-              "fecha_registro=", repr(fecha_registro_str))
-
+      
         if tipo_registro == "encontrada":
             nombre = "encontrada"
 
-        print("[DBG CREAR] Tipo y nombre efectivos:",
-              "tipo_registro=", tipo_registro,
-              "nombre=", nombre)
 
         if not nombre:
             flash("El nombre de la mascota es obligatorio.", "error")
@@ -779,19 +824,6 @@ def crear_mascota(mascota_id=None):
         if not fecha_registro:
             fecha_registro = mascota.fecha_registro if edit_mode and mascota.fecha_registro else datetime.utcnow().date()
 
-        print("[DBG CREAR] Normalizados:",
-              "especie=", repr(especie),
-              "raza=", repr(raza),
-              "zona=", repr(zona),
-              "codigo_postal=", repr(codigo_postal),
-              "color=", repr(color),
-              "sexo=", repr(sexo),
-              "tamano=", repr(tamano),
-              "fecha_registro=", fecha_registro)
-        print("[DBG CREAR] Obligatorios presentes?",
-              "zona=", bool(zona),
-              "email=", bool(propietario_email),
-              "tel=", bool(propietario_telefono))
 
         email_norm = (propietario_email or "").strip().lower()
         dup_q = Mascota.query.filter_by(
@@ -812,7 +844,7 @@ def crear_mascota(mascota_id=None):
             dup_count = dup_q.count()
         except Exception as e:
             dup_count = f"error count: {e}"
-        print("[DBG CREAR] Duplicados (clave UNIQUE) encontrados:", dup_count)
+            print("[DBG CREAR] Duplicados (clave UNIQUE) encontrados:", dup_count)
 
         if dup_q.first():
             print("[DBG CREAR] BLOQUEADO por duplicado según clave UNIQUE")
@@ -857,7 +889,7 @@ def crear_mascota(mascota_id=None):
             )
             db.session.add(mascota)
 
-        print("[DBG CREAR] Antes de flush: mascota.id=", getattr(mascota, "id", None))
+       # print("[DBG CREAR] Antes de flush: mascota.id=", getattr(mascota, "id", None))
         try:
             db.session.flush()
         except IntegrityError as exc:
@@ -890,9 +922,8 @@ def crear_mascota(mascota_id=None):
 
         fotos = request.files.getlist("fotos")
         tipos_foto = request.form.getlist("fotos_tipo")  # antes ponía "tipo_foto"
-        print("[DBG CREAR] files.fotos len=", len(fotos),
-              "tipos_foto len=", len(tipos_foto))
-        print("[DBG CREAR] tipos_foto=", tipos_foto)
+       # print("[DBG CREAR] files.fotos len=", len(fotos),"tipos_foto len=", len(tipos_foto))
+       # print("[DBG CREAR] tipos_foto=", tipos_foto)
 
         nuevas_rutas_guardadas: List[str] = []
 
@@ -939,7 +970,7 @@ def crear_mascota(mascota_id=None):
                 )
             )
 
-        print("[DBG CREAR] Antes de commit: mascota.id=", getattr(mascota, "id", None))
+       # print("[DBG CREAR] Antes de commit: mascota.id=", getattr(mascota, "id", None))
         try:
             db.session.commit()
         except IntegrityError as exc:
@@ -971,7 +1002,7 @@ def crear_mascota(mascota_id=None):
             flash("Ocurrió un error al guardar la mascota.", "error")
             return redirect(request.url)
 
-        print("[DBG CREAR] Mascota creada/actualizada OK. id=", mascota.id, "tipo=", mascota.tipo_registro)
+       # print("[DBG CREAR] Mascota creada/actualizada OK. id=", mascota.id, "tipo=", mascota.tipo_registro)
 
         if edit_mode:
             flash("Mascota actualizada correctamente.", "success")

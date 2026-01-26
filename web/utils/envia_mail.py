@@ -27,7 +27,7 @@ def send_pet_email(
         "[MAIL] Config Brevo: sender=%s to=%s",
         smtp_user, destino_principal
     )
-    print("[MAIL] Config Brevo:", smtp_user, destino_principal)
+   # print("[MAIL] Config Brevo:", smtp_user, destino_principal)
 
     if not all([smtp_user, smtp_password, destino_principal]):
         current_app.logger.error(
@@ -50,7 +50,7 @@ def send_pet_email(
                 destinatarios.append(correo_norm)
 
     current_app.logger.info("[MAIL] Destinatarios finales: %s", destinatarios)
-    print("[MAIL] Destinatarios finales:", destinatarios)
+   # print("[MAIL] Destinatarios finales:", destinatarios)
 
     if not destinatarios:
         current_app.logger.error(
@@ -75,7 +75,7 @@ def send_pet_email(
     fotos_lista = list(fotos or [])
     adjuntos = []
     current_app.logger.info("[MAIL] Nº de fotos a adjuntar: %d", len(fotos_lista))
-    print("[MAIL] Nº de fotos a adjuntar:", len(fotos_lista))
+   # print("[MAIL] Nº de fotos a adjuntar:", len(fotos_lista))
 
     for foto in fotos_lista:
         data_bytes = foto.get("data")
@@ -126,7 +126,7 @@ def send_pet_email(
     # Enviar el correo por HTTPS a Brevo
     try:
         current_app.logger.info("[MAIL] Enviando a Brevo API, destinatarios=%s", destinatarios)
-        print("[MAIL] Enviando a Brevo API...")
+       # print("[MAIL] Enviando a Brevo API...")
         resp = requests.post(
             "https://api.brevo.com/v3/smtp/email",
             json=payload,
@@ -138,7 +138,7 @@ def send_pet_email(
             "Correo enviado correctamente vía Brevo: %s -> %s",
             subject, ", ".join(destinatarios)
         )
-        print("[MAIL] Correo enviado OK vía Brevo")
+       # print("[MAIL] Correo enviado OK vía Brevo")
         return True
     except Exception as exc:  # pylint: disable=broad-except
         current_app.logger.exception("Error al enviar correo (%s): %s", subject, exc)
@@ -169,7 +169,7 @@ def descargar_url_local(url_relativa: str, timeout: int = 30) -> tuple[bytes, Op
         url_completa = base.rstrip("/") + (url_relativa if url_relativa.startswith("/") else f"/{url_relativa}")
 
     current_app.logger.info("[MAIL] Descargando URL completa: %s", url_completa)
-    print("[MAIL] Descargando URL completa:", url_completa)
+   # print("[MAIL] Descargando URL completa:", url_completa)
 
     with urllib.request.urlopen(url_completa, timeout=timeout) as resp:
         data = resp.read()
