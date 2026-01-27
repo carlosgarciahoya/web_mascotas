@@ -3,6 +3,7 @@
 __pycache__/
 *.docx
 *.pdf
+*.bat
 web/static/fotos/
 "guardar_claves_openai - copia.bat"
 guardar_claves_openai - copia.bat

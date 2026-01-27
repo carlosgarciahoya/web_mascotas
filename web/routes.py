@@ -10,6 +10,8 @@ from typing import List, Dict
 import io
 import mimetypes
 
+import requests  # ← librería externa para hacer la petición HTTP
+
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, jsonify, current_app,
@@ -32,6 +34,9 @@ from .utils.publicar_fb import publish_pet_fb_post
 
 # from para envio mensajes a instagram
 from .utils.publicar_en_instagram import publicar_en_instagram
+
+# from para envio mensajes a telegram
+from .utils.envia_telegram import send_pet_telegram
 
 from .utils.comparar_fotos_todas import comparar_fotos_todas
 from .utils.identificar_raza import identificar_raza
@@ -365,7 +370,6 @@ def _comparar_imagenes_openai(prompt: str, data_urls: List[str]) -> str:
     )
     return respuesta.choices[0].message.content
 
-
 def _cargar_smtp_env(app) -> None:
     app.config["SMTP_SERVER"] = os.getenv("SMTP_SERVER", "")
     app.config["SMTP_PORT"] = int(os.getenv("SMTP_PORT", "587"))
@@ -376,6 +380,10 @@ def _cargar_smtp_env(app) -> None:
       # NUEVO: WhatsApp
     app.config["WHATSAPP_TOKEN"] = os.getenv("WHATSAPP_TOKEN", "")
     app.config["WHATSAPP_PHONE_NUMBER_ID"] = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+
+    
+       # Telegram
+    app.config["TELEGRAM_TOKEN"] = os.getenv("TELEGRAM_TOKEN", "")
 
 
 def _programar_envio_correo(mascota_id: int) -> None:
@@ -488,6 +496,53 @@ def _worker_enviar_correo(app, mascota_id: int) -> None:
                 "No se envía WhatsApp: la mascota %s no tiene teléfono.",
                 mascota_id
             )
+
+
+        # Función para saber el último chat_id que te escribió vale para telegram 
+
+
+        # Comprobar si el token se ha cargado en la config
+        token = current_app.config.get("TELEGRAM_TOKEN")
+        print("DEBUG TELEGRAM_TOKEN visible?:", bool(token))
+        if token:
+            # Opcional: ver los primeros caracteres (no imprimas todo el token en claro)
+            print("DEBUG TELEGRAM_TOKEN empieza por:", token[:8], "...")
+
+
+        def get_last_chat_id() -> str | None:
+            token = current_app.config.get("TELEGRAM_TOKEN")
+            if not token:
+                current_app.logger.error("Falta TELEGRAM_TOKEN")
+                return None
+
+            url = f"https://api.telegram.org/bot{token}/getUpdates"
+            resp = requests.get(url)
+            data = resp.json()
+
+            if not data.get("ok") or not data.get("result"):
+                current_app.logger.error("No hay mensajes nuevos en getUpdates")
+                return None
+
+            last_update = data["result"][-1]
+            return last_update["message"]["chat"]["id"]
+
+
+        # Enviar también a Telegram
+        ok_tg = False
+        chat_id = get_last_chat_id()  # lee el último chat que te ha escrito (tras pulsar Start/OK)
+
+        if chat_id:
+            ok_tg = send_pet_telegram(chat_id, texto_wsp, link_foto=link_foto)
+            if not ok_tg:
+                current_app.logger.error(
+                    "Fallo al enviar Telegram de la mascota %s al chat_id %s",
+                    mascota_id, chat_id
+                )
+        else:
+            current_app.logger.warning(
+                "No se envía Telegram: no hay chat_id (nadie ha pulsado Start/OK al bot)."
+            )
+
 
         # NUEVO: publicar en Instagram con nueva variable
         # construye las URLs con la base específica para IG (IG_MEDIA_BASE_URL)
